@@ -1,0 +1,4522 @@
+<!DOCTYPE html>
+<html lang="tg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHT Python TJ — Муҳити рушди забони тоҷикӣ</title>
+<meta name="description" content="SHT Python TJ - Веб-IDE барои омӯзиши барномасозӣ ба забони тоҷикӣ">
+<meta name="author" content="SHT">
+
+<!-- ============================================================
+     SHT Python TJ - Tajik Python-like Web IDE
+     Версия: 1.0.0
+     Муаллиф: SHT
+     ============================================================
+     Сохтор:
+       1. CSS - тарҳрезии интерфейс
+       2. HTML - сохтори саҳифа
+       3. JS - мантиқи кор:
+          - Lexer (таҳлили лексикӣ)
+          - Parser (таҳлили синтаксисӣ)
+          - Interpreter (иҷрокунанда)
+          - Editor (муҳаррир)
+          - FileManager (идоракунии файлҳо)
+          - UIManager (идоракунии интерфейс)
+     ============================================================ -->
+
+<style>
+/* ============================================================
+   БАХШИ 1: ТАНЗИМОТИ АСОСӢ (RESET & BASE)
+   ============================================================ */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    /* Рангҳои асосӣ - VS Code Dark+ palette */
+    --bg-primary: #1e1e1e;
+    --bg-secondary: #252526;
+    --bg-tertiary: #2d2d30;
+    --bg-elevated: #333333;
+    --bg-hover: #2a2d2e;
+    --bg-active: #094771;
+    --bg-sidebar: #252526;
+    --bg-statusbar: #007acc;
+    --bg-titlebar: #3c3c3c;
+    --bg-editor: #1e1e1e;
+    --bg-console: #1e1e1e;
+    --bg-tab: #2d2d30;
+    --bg-tab-active: #1e1e1e;
+    
+    /* Матнҳо */
+    --text-primary: #cccccc;
+    --text-secondary: #9da5b4;
+    --text-muted: #6a6a6a;
+    --text-bright: #ffffff;
+    --text-accent: #4ec9b0;
+    
+    /* Сарҳадҳо */
+    --border-color: #3e3e42;
+    --border-active: #007acc;
+    --border-focus: #007fd4;
+    
+    /* Рангҳои синтаксис (Python) */
+    --syntax-keyword: #c586c0;
+    --syntax-function: #dcdcaa;
+    --syntax-string: #ce9178;
+    --syntax-number: #b5cea8;
+    --syntax-comment: #6a9955;
+    --syntax-operator: #d4d4d4;
+    --syntax-builtin: #4ec9b0;
+    --syntax-variable: #9cdcfe;
+    --syntax-decorator: #ffd700;
+    --syntax-bracket: #ffd700;
+    
+    /* Акцент */
+    --accent-blue: #007acc;
+    --accent-green: #4ec9b0;
+    --accent-yellow: #dcdcaa;
+    --accent-red: #f48771;
+    --accent-orange: #ce9178;
+    --accent-purple: #c586c0;
+    
+    /* Андозаҳо */
+    --sidebar-width: 280px;
+    --titlebar-height: 35px;
+    --statusbar-height: 24px;
+    --activitybar-width: 50px;
+    --console-height: 220px;
+    --tab-height: 35px;
+    
+    /* Шрифтҳо */
+    --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+    --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    
+    /* Сояҳо */
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
+    --shadow-glow: 0 0 20px rgba(0,122,204,0.4);
+    
+    /* Анимация */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s ease;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   БАХШИ 2: SPLASH SCREEN (САҲИФАИ ИБТИДОӢ)
+   ============================================================ */
+
+#splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1e1e1e 50%, #0d2538 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+#splash-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.splash-logo {
+    width: 140px;
+    height: 140px;
+    margin-bottom: 30px;
+    position: relative;
+    animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(5deg); }
+}
+
+.splash-logo svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 30px rgba(78, 201, 176, 0.6));
+}
+
+.splash-title {
+    font-size: 48px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #4ec9b0 0%, #007acc 50%, #c586c0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+    animation: titleGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+    from { filter: brightness(1); }
+    to { filter: brightness(1.3); }
+}
+
+.splash-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 50px;
+    letter-spacing: 1px;
+}
+
+.splash-progress {
+    width: 300px;
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,122,204,0.3);
+}
+
+.splash-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4ec9b0, #007acc, #c586c0);
+    background-size: 200% 100%;
+    width: 0%;
+    animation: progressFill 2s ease forwards, gradientMove 1.5s linear infinite;
+}
+
+@keyframes progressFill {
+    to { width: 100%; }
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+.splash-status {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.splash-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    opacity: 0;
+    animation: particleRise 4s linear infinite;
+}
+
+@keyframes particleRise {
+    0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+    }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% {
+        transform: translateY(-10vh) scale(1.5);
+        opacity: 0;
+    }
+}
+
+/* ============================================================
+   БАХШИ 3: TITLEBAR (САРБАРГ)
+   ============================================================ */
+
+.titlebar {
+    height: var(--titlebar-height);
+    background: var(--bg-titlebar);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    z-index: 100;
+    -webkit-app-region: drag;
+}
+
+.titlebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 20px;
+}
+
+.titlebar-logo svg {
+    width: 22px;
+    height: 22px;
+}
+
+.titlebar-title {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.titlebar-menu {
+    display: flex;
+    gap: 2px;
+    -webkit-app-region: no-drag;
+}
+
+.menu-item {
+    padding: 4px 10px;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background var(--transition-fast);
+    position: relative;
+}
+
+.menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.menu-item.active {
+    background: var(--bg-active);
+}
+
+.menu-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    min-width: 240px;
+    box-shadow: var(--shadow-md);
+    padding: 4px 0;
+    display: none;
+    z-index: 1000;
+    animation: dropdownShow 0.15s ease;
+}
+
+@keyframes dropdownShow {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-item.active .menu-dropdown {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 6px 16px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background var(--transition-fast);
+}
+
+.dropdown-item:hover {
+    background: var(--bg-active);
+    color: var(--text-bright);
+}
+
+.dropdown-shortcut {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.dropdown-separator {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+}
+
+/* ============================================================
+   БАХШИ 4: ASOSI LAYOUT (Сохтори асосӣ)
+   ============================================================ */
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+}
+
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.activity-bar {
+    width: var(--activitybar-width);
+    background: var(--bg-tertiary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+    gap: 4px;
+}
+
+.activity-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.activity-btn:hover {
+    color: var(--text-bright);
+}
+
+.activity-btn.active {
+    color: var(--text-bright);
+}
+
+.activity-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--accent-blue);
+    border-radius: 0 2px 2px 0;
+}
+
+.activity-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.activity-btn .tooltip {
+    position: absolute;
+    left: 100%;
+    margin-left: 10px;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+    z-index: 100;
+    border: 1px solid var(--border-color);
+}
+
+.activity-btn:hover .tooltip {
+    opacity: 1;
+}
+
+/* ============================================================
+   БАХШИ 5: SIDEBAR (Панели рост)
+   ============================================================ */
+
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width var(--transition-normal);
+}
+
+.sidebar.collapsed {
+    width: 0;
+}
+
+.sidebar-header {
+    padding: 10px 20px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+
+.sidebar-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.icon-btn {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 3px;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    background: transparent;
+    border: none;
+}
+
+.icon-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-bright);
+}
+
+.icon-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.sidebar-section-title {
+    padding: 8px 20px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+
+.sidebar-section-title:hover {
+    background: var(--bg-hover);
+}
+
+.section-arrow {
+    transition: transform var(--transition-fast);
+}
+
+.section-arrow.expanded {
+    transform: rotate(90deg);
+}
+
+.file-explorer {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.file-item {
+    padding: 4px 20px 4px 30px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-primary);
+    transition: background var(--transition-fast);
+    position: relative;
+    user-select: none;
+}
+
+.file-item:hover {
+    background: var(--bg-hover);
+}
+
+.file-item.active {
+    background: var(--bg-active);
+    color: var(--text-bright);
+}
+
+.file-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--accent-blue);
+}
+
+.file-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--accent-blue);
+}
+
+.file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-delete {
+    opacity: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: all var(--transition-fast);
+    color: var(--text-secondary);
+}
+
+.file-item:hover .file-delete {
+    opacity: 1;
+}
+
+.file-delete:hover {
+    background: var(--accent-red);
+    color: white;
+}
+
+.sidebar-footer {
+    padding: 10px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sidebar-btn {
+    padding: 8px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+    font-family: var(--font-ui);
+}
+
+.sidebar-btn:hover {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-1px);
+}
+
+.sidebar-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ============================================================
+   БАХШИ 6: EDITOR (Муҳаррир)
+   ============================================================ */
+
+.editor-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-editor);
+}
+
+.tabs-bar {
+    height: var(--tab-height);
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+}
+
+.tabs-bar::-webkit-scrollbar {
+    height: 3px;
+}
+
+.tab {
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--bg-tab);
+    border-right: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+    min-width: 130px;
+    max-width: 200px;
+    position: relative;
+}
+
+.tab:hover {
+    background: var(--bg-hover);
+}
+
+.tab.active {
+    background: var(--bg-tab-active);
+    color: var(--text-bright);
+}
+
+.tab.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--accent-blue);
+}
+
+.tab svg.tab-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--accent-blue);
+    flex-shrink: 0;
+}
+
+.tab-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tab-close {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    opacity: 0;
+    transition: all var(--transition-fast);
+}
+
+.tab:hover .tab-close,
+.tab.active .tab-close {
+    opacity: 1;
+}
+
+.tab-close:hover {
+    background: var(--bg-hover);
+}
+
+.tab.modified .tab-close::before {
+    content: '●';
+    color: var(--text-primary);
+}
+
+.tab.modified:hover .tab-close::before,
+.tab.modified.active .tab-close::before {
+    content: '✕';
+    font-size: 11px;
+}
+
+.editor-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    background: var(--bg-editor);
+}
+
+.line-numbers {
+    width: 50px;
+    background: var(--bg-editor);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 21px;
+    padding: 10px 8px 10px 0;
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+    border-right: 1px solid transparent;
+    flex-shrink: 0;
+}
+
+.line-number {
+    height: 21px;
+    color: var(--text-muted);
+    transition: color var(--transition-fast);
+}
+
+.line-number.active {
+    color: var(--text-primary);
+}
+
+.editor-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: auto;
+    background: var(--bg-editor);
+}
+
+.editor-wrapper::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+.editor-wrapper::-webkit-scrollbar-track {
+    background: var(--bg-editor);
+}
+
+.editor-wrapper::-webkit-scrollbar-thumb {
+    background: var(--bg-elevated);
+    border: 3px solid var(--bg-editor);
+    border-radius: 7px;
+}
+
+.editor-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.editor-content {
+    position: relative;
+    min-height: 100%;
+    min-width: 100%;
+}
+
+.code-input,
+.code-highlight {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 21px;
+    padding: 10px 15px;
+    margin: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--text-bright);
+    resize: none;
+    white-space: pre;
+    overflow: hidden;
+    tab-size: 4;
+    -moz-tab-size: 4;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    user-select: text;
+    z-index: 2;
+}
+
+.code-input::selection {
+    background: rgba(0, 122, 204, 0.4);
+}
+
+.code-highlight {
+    pointer-events: none;
+    color: var(--text-primary);
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* Подсветка синтаксиса */
+.tok-keyword { color: var(--syntax-keyword); font-weight: 500; }
+.tok-function { color: var(--syntax-function); }
+.tok-builtin { color: var(--syntax-builtin); }
+.tok-string { color: var(--syntax-string); }
+.tok-number { color: var(--syntax-number); }
+.tok-comment { color: var(--syntax-comment); font-style: italic; }
+.tok-operator { color: var(--syntax-operator); }
+.tok-variable { color: var(--syntax-variable); }
+.tok-bracket-1 { color: #ffd700; }
+.tok-bracket-2 { color: #da70d6; }
+.tok-bracket-3 { color: #87cefa; }
+.tok-boolean { color: var(--syntax-keyword); font-weight: 500; }
+
+/* Курсор анимация */
+.code-input {
+    caret-shape: block;
+}
+
+@keyframes cursorBlink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+/* ============================================================
+   БАХШИ 7: CONSOLE (Консол)
+   ============================================================ */
+
+.console-area {
+    height: var(--console-height);
+    background: var(--bg-console);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    transition: height var(--transition-normal);
+    position: relative;
+}
+
+.console-area.collapsed {
+    height: 35px;
+}
+
+.console-resizer {
+    position: absolute;
+    top: -3px;
+    left: 0;
+    right: 0;
+    height: 6px;
+    cursor: ns-resize;
+    z-index: 10;
+}
+
+.console-resizer:hover {
+    background: var(--accent-blue);
+    opacity: 0.5;
+}
+
+.console-header {
+    height: 35px;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    border-bottom: 1px solid var(--border-color);
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.console-tab {
+    padding: 6px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.console-tab:hover {
+    color: var(--text-primary);
+}
+
+.console-tab.active {
+    color: var(--text-bright);
+    border-bottom-color: var(--accent-blue);
+}
+
+.console-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+}
+
+.console-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 15px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.console-content::-webkit-scrollbar {
+    width: 10px;
+}
+
+.console-content::-webkit-scrollbar-track {
+    background: var(--bg-console);
+}
+
+.console-content::-webkit-scrollbar-thumb {
+    background: var(--bg-elevated);
+    border-radius: 5px;
+}
+
+.console-line {
+    padding: 2px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    animation: lineAppear 0.2s ease;
+}
+
+@keyframes lineAppear {
+    from { opacity: 0; transform: translateX(-5px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.console-line.output {
+    color: var(--text-primary);
+}
+
+.console-line.info {
+    color: var(--accent-blue);
+}
+
+.console-line.success {
+    color: var(--accent-green);
+}
+
+.console-line.warning {
+    color: var(--accent-yellow);
+}
+
+.console-line.error {
+    color: var(--accent-red);
+    background: rgba(244, 135, 113, 0.08);
+    padding: 8px 10px;
+    border-left: 3px solid var(--accent-red);
+    margin: 4px 0;
+    border-radius: 3px;
+}
+
+.console-line.system {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.console-prefix {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.console-message {
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.error-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.error-detail {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-top: 4px;
+    padding-left: 10px;
+    border-left: 2px solid var(--accent-red);
+}
+
+/* ============================================================
+   БАХШИ 8: STATUS BAR (Сатри ҳолат)
+   ============================================================ */
+
+.status-bar {
+    height: var(--statusbar-height);
+    background: var(--bg-statusbar);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 12px;
+    color: white;
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px;
+    height: 100%;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.status-item:hover {
+    background: rgba(255,255,255,0.12);
+}
+
+.status-item svg {
+    width: 13px;
+    height: 13px;
+}
+
+.status-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ec9b0;
+    box-shadow: 0 0 8px rgba(78,201,176,0.7);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ============================================================
+   БАХШИ 9: BUTTONS (Тугмаҳо)
+   ============================================================ */
+
+.run-button {
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+    font-family: var(--font-ui);
+    margin-left: auto;
+    margin-right: 10px;
+}
+
+.run-button:hover {
+    background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.5), 0 0 20px rgba(22, 163, 74, 0.3);
+    transform: translateY(-1px);
+}
+
+.run-button:active {
+    transform: translateY(0);
+}
+
+.run-button svg {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+}
+
+.stop-button {
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--transition-fast);
+    font-family: var(--font-ui);
+    margin-right: 10px;
+}
+
+.stop-button:hover {
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.5);
+}
+
+/* ============================================================
+   БАХШИ 10: MODALS (Модалҳо)
+   ============================================================ */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-normal);
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.modal {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    min-width: 400px;
+    max-width: 600px;
+    box-shadow: var(--shadow-lg);
+    transform: scale(0.9);
+    transition: transform var(--transition-normal);
+    overflow: hidden;
+}
+
+.modal-overlay.active .modal {
+    transform: scale(1);
+}
+
+.modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-tertiary);
+}
+
+.modal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-bright);
+}
+
+.modal-close {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+    background: var(--accent-red);
+    color: white;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    background: var(--bg-tertiary);
+}
+
+.input-group {
+    margin-bottom: 14px;
+}
+
+.input-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.text-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: var(--font-ui);
+    outline: none;
+    transition: all var(--transition-fast);
+}
+
+.text-input:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.25);
+}
+
+.modal-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all var(--transition-fast);
+    font-family: var(--font-ui);
+}
+
+.modal-btn:hover {
+    background: var(--bg-hover);
+}
+
+.modal-btn.primary {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: white;
+}
+
+.modal-btn.primary:hover {
+    background: #1a8bdc;
+}
+
+.modal-btn.danger {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+    color: white;
+}
+
+/* ============================================================
+   БАХШИ 11: NOTIFICATIONS (Огоҳиҳо)
+   ============================================================ */
+
+.notification-container {
+    position: fixed;
+    top: 50px;
+    right: 20px;
+    z-index: 8000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.notification {
+    background: var(--bg-elevated);
+    border-left: 4px solid var(--accent-blue);
+    padding: 12px 16px;
+    border-radius: 4px;
+    box-shadow: var(--shadow-md);
+    min-width: 280px;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: all;
+    animation: slideInRight 0.3s ease;
+    font-size: 13px;
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.notification.removing {
+    animation: slideOutRight 0.3s ease forwards;
+}
+
+@keyframes slideOutRight {
+    to { transform: translateX(120%); opacity: 0; }
+}
+
+.notification.success { border-left-color: var(--accent-green); }
+.notification.warning { border-left-color: var(--accent-yellow); }
+.notification.error { border-left-color: var(--accent-red); }
+
+.notification-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.notification-message {
+    flex: 1;
+    color: var(--text-primary);
+}
+
+/* ============================================================
+   БАХШИ 12: WELCOME PANEL (Лавҳаи хушомадгӯӣ)
+   ============================================================ */
+
+.welcome-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    background: var(--bg-editor);
+}
+
+.welcome-logo {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 20px rgba(78,201,176,0.5));
+}
+
+.welcome-title {
+    font-size: 36px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #4ec9b0, #007acc, #c586c0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+
+.welcome-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 30px;
+}
+
+.welcome-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.welcome-btn {
+    padding: 10px 20px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+}
+
+.welcome-btn:hover {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+/* ============================================================
+   БАХШИ 13: ADAPTIVE DESIGN (Дизайни мутобиқкунанда)
+   ============================================================ */
+
+@media (max-width: 768px) {
+    :root {
+        --sidebar-width: 240px;
+        --activitybar-width: 45px;
+        --console-height: 180px;
+    }
+    
+    .titlebar-menu {
+        display: none;
+    }
+    
+    .splash-title {
+        font-size: 32px;
+    }
+    
+    .splash-progress {
+        width: 240px;
+    }
+    
+    .welcome-title {
+        font-size: 24px;
+    }
+    
+    .modal {
+        min-width: 90vw;
+        margin: 20px;
+    }
+    
+    .status-bar {
+        font-size: 11px;
+        gap: 8px;
+    }
+    
+    .status-item {
+        padding: 0 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --sidebar-width: 200px;
+        --activitybar-width: 40px;
+    }
+    
+    .sidebar {
+        position: absolute;
+        top: var(--titlebar-height);
+        bottom: var(--statusbar-height);
+        z-index: 50;
+        box-shadow: var(--shadow-md);
+    }
+    
+    .run-button, .stop-button {
+        padding: 4px 10px;
+        font-size: 11px;
+    }
+}
+
+/* ============================================================
+   БАХШИ 14: УТИЛИТАҲО
+   ============================================================ */
+
+.hidden { display: none !important; }
+.flex { display: flex; }
+.center { display: flex; align-items: center; justify-content: center; }
+
+::selection {
+    background: rgba(0, 122, 204, 0.4);
+    color: white;
+}
+
+*:focus {
+    outline: none;
+}
+
+/* Глобал scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bg-elevated);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     БАХШИ 1: SPLASH SCREEN
+     ============================================================ -->
+<div id="splash-screen">
+    <div class="splash-particles" id="particles"></div>
+    <div class="splash-logo">
+        <svg viewBox="0 0 200 200" fill="none">
+            <defs>
+                <linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#4ec9b0"/>
+                    <stop offset="50%" stop-color="#007acc"/>
+                    <stop offset="100%" stop-color="#c586c0"/>
+                </linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r="90" stroke="url(#splashGrad)" stroke-width="6" fill="none" opacity="0.3"/>
+            <path d="M 60 50 Q 100 30, 140 50 L 140 100 Q 100 80, 60 100 Z" fill="#4ec9b0"/>
+            <path d="M 60 100 Q 100 120, 140 100 L 140 150 Q 100 170, 60 150 Z" fill="#007acc"/>
+            <circle cx="75" cy="70" r="6" fill="#1e1e1e"/>
+            <circle cx="125" cy="130" r="6" fill="#1e1e1e"/>
+            <text x="100" y="115" text-anchor="middle" fill="white" font-size="20" font-weight="bold" font-family="monospace">TJ</text>
+        </svg>
+    </div>
+    <div class="splash-title">SHT Python TJ</div>
+    <div class="splash-subtitle">Муҳити рушди барномасозӣ ба забони тоҷикӣ</div>
+    <div class="splash-progress">
+        <div class="splash-progress-bar"></div>
+    </div>
+    <div class="splash-status" id="splashStatus">Боркунӣ оғоз шуд...</div>
+</div>
+
+<!-- ============================================================
+     БАХШИ 2: ASOSI APP CONTAINER
+     ============================================================ -->
+<div class="app-container">
+
+    <!-- TITLEBAR -->
+    <div class="titlebar">
+        <div class="titlebar-logo">
+            <svg viewBox="0 0 32 32" fill="none">
+                <defs>
+                    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#4ec9b0"/>
+                        <stop offset="100%" stop-color="#007acc"/>
+                    </linearGradient>
+                </defs>
+                <path d="M 10 6 Q 16 4, 22 6 L 22 14 Q 16 12, 10 14 Z" fill="url(#logoGrad)"/>
+                <path d="M 10 14 Q 16 16, 22 14 L 22 26 Q 16 28, 10 26 Z" fill="#007acc"/>
+                <circle cx="13" cy="10" r="1.5" fill="#1e1e1e"/>
+                <circle cx="19" cy="22" r="1.5" fill="#1e1e1e"/>
+            </svg>
+            <span class="titlebar-title">SHT Python TJ</span>
+        </div>
+        <div class="titlebar-menu">
+            <div class="menu-item" data-menu="file">
+                Файл
+                <div class="menu-dropdown">
+                    <div class="dropdown-item" data-action="new-file">
+                        <span>Файли нав</span>
+                        <span class="dropdown-shortcut">Ctrl+N</span>
+                    </div>
+                    <div class="dropdown-item" data-action="open-file">
+                        <span>Кушодан...</span>
+                        <span class="dropdown-shortcut">Ctrl+O</span>
+                    </div>
+                    <div class="dropdown-item" data-action="save-file">
+                        <span>Сабт</span>
+                        <span class="dropdown-shortcut">Ctrl+S</span>
+                    </div>
+                    <div class="dropdown-item" data-action="save-as">
+                        <span>Сабт ҳамчун...</span>
+                        <span class="dropdown-shortcut">Ctrl+Shift+S</span>
+                    </div>
+                    <div class="dropdown-separator"></div>
+                    <div class="dropdown-item" data-action="download">
+                        <span>Боргирӣ кардан</span>
+                    </div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="edit">
+                Таҳрир
+                <div class="menu-dropdown">
+                    <div class="dropdown-item" data-action="undo">
+                        <span>Бекор кардан</span>
+                        <span class="dropdown-shortcut">Ctrl+Z</span>
+                    </div>
+                    <div class="dropdown-item" data-action="redo">
+                        <span>Баргардондан</span>
+                        <span class="dropdown-shortcut">Ctrl+Y</span>
+                    </div>
+                    <div class="dropdown-separator"></div>
+                    <div class="dropdown-item" data-action="select-all">
+                        <span>Ҳамаро интихоб кардан</span>
+                        <span class="dropdown-shortcut">Ctrl+A</span>
+                    </div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="run">
+                Иҷро
+                <div class="menu-dropdown">
+                    <div class="dropdown-item" data-action="run">
+                        <span>Иҷро кардан</span>
+                        <span class="dropdown-shortcut">Ctrl+Enter</span>
+                    </div>
+                    <div class="dropdown-item" data-action="clear-console">
+                        <span>Тоза кардани консол</span>
+                        <span class="dropdown-shortcut">Ctrl+L</span>
+                    </div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="help">
+                Кӯмак
+                <div class="menu-dropdown">
+                    <div class="dropdown-item" data-action="help">
+                        <span>Дастур</span>
+                        <span class="dropdown-shortcut">F1</span>
+                    </div>
+                    <div class="dropdown-item" data-action="examples">
+                        <span>Намунаҳо</span>
+                    </div>
+                    <div class="dropdown-item" data-action="about">
+                        <span>Дар бораи барнома</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        
+        <!-- ACTIVITY BAR -->
+        <div class="activity-bar">
+            <div class="activity-btn active" data-view="explorer">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+                <span class="tooltip">Тадқиқотчӣ</span>
+            </div>
+            <div class="activity-btn" data-view="search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="7"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <span class="tooltip">Ҷустуҷӯ</span>
+            </div>
+            <div class="activity-btn" data-view="run">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                <span class="tooltip">Иҷро ва ислоҳ</span>
+            </div>
+            <div class="activity-btn" data-view="help">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span class="tooltip">Кӯмак</span>
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <span>Тадқиқотчӣ</span>
+                <div class="sidebar-actions">
+                    <button class="icon-btn" id="newFileBtn" title="Файли нав">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="12" y1="18" x2="12" y2="12"/>
+                            <line x1="9" y1="15" x2="15" y2="15"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" id="refreshBtn" title="Аз нав боркунӣ">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="sidebar-section-title" id="projectToggle">
+                <svg class="section-arrow expanded" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M9 5l7 7-7 7V5z"/>
+                </svg>
+                <span>ЛОЙИҲА</span>
+            </div>
+            
+            <div class="file-explorer" id="fileExplorer">
+                <!-- Файлҳо тавассути JS пур мешаванд -->
+            </div>
+            
+            <div class="sidebar-footer">
+                <button class="sidebar-btn" id="btnNewFile">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    Файли нав
+                </button>
+                <button class="sidebar-btn" id="btnSave">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    Сабт
+                </button>
+                <button class="sidebar-btn" id="btnOpen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Кушодан
+                </button>
+            </div>
+        </div>
+
+        <!-- EDITOR AREA -->
+        <div class="editor-area">
+            <div class="tabs-bar" id="tabsBar">
+                <!-- Tabs тавассути JS -->
+            </div>
+
+            <div class="editor-container" id="editorContainer">
+                <div class="line-numbers" id="lineNumbers"></div>
+                <div class="editor-wrapper" id="editorWrapper">
+                    <div class="editor-content">
+                        <pre class="code-highlight" id="codeHighlight"></pre>
+                        <textarea class="code-input" id="codeInput" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONSOLE -->
+            <div class="console-area" id="consoleArea">
+                <div class="console-resizer" id="consoleResizer"></div>
+                <div class="console-header">
+                    <div class="console-tab active" data-console-tab="output">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="4 17 10 11 4 5"/>
+                            <line x1="12" y1="19" x2="20" y2="19"/>
+                        </svg>
+                        Консол
+                    </div>
+                    <div class="console-tab" data-console-tab="problems">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        Мушкилот <span id="problemsCount" style="color: var(--accent-red);"></span>
+                    </div>
+                    
+                    <button class="run-button" id="runBtn">
+                        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        Иҷро
+                    </button>
+
+                    <div class="console-actions">
+                        <button class="icon-btn" id="clearConsoleBtn" title="Тоза кардан">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                        <button class="icon-btn" id="toggleConsoleBtn" title="Печондан">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="console-content" id="consoleContent">
+                    <div class="console-line system">
+                        <span class="console-prefix">»</span>
+                        <span class="console-message">SHT Python TJ v1.0.0 - Хуш омадед! Барои иҷрои код тугмаи «Иҷро»-ро пахш кунед ё Ctrl+Enter-ро истифода баред.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+        <div class="status-item" id="statusBranch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="6" cy="6" r="3"/>
+                <circle cx="6" cy="18" r="3"/>
+                <path d="M6 9v6m12-3a9 9 0 0 1-9 9"/>
+                <circle cx="18" cy="6" r="3"/>
+            </svg>
+            <span>асосӣ</span>
+        </div>
+        <div class="status-item" id="statusErrors">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span id="errorCount">0</span>
+        </div>
+        <div class="status-right">
+            <div class="status-item" id="statusLine">Сатр 1, Сутун 1</div>
+            <div class="status-item">UTF-8</div>
+            <div class="status-item">Тоҷикӣ-Python</div>
+            <div class="status-item">
+                <span class="status-indicator"></span>
+                <span>Тайёр</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     БАХШИ 3: MODALS
+     ============================================================ -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+        <div class="modal-header">
+            <div class="modal-title" id="modalTitle">Сарлавҳа</div>
+            <div class="modal-close" id="modalClose">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </div>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- Мазмун -->
+        </div>
+        <div class="modal-footer" id="modalFooter">
+            <!-- Тугмаҳо -->
+        </div>
+    </div>
+</div>
+
+<input type="file" id="fileInput" accept=".tjpy,.py,.txt" style="display:none">
+
+<!-- ============================================================
+     БАХШИ 4: NOTIFICATIONS
+     ============================================================ -->
+<div class="notification-container" id="notifications"></div>
+
+<script>
+/* ============================================================
+   ============================================================
+   SHT PYTHON TJ - MAIN JAVASCRIPT
+   ============================================================
+   Сохтор:
+     1. Constants & Configuration
+     2. Utility Functions
+     3. Lexer (Таҳлили лексикӣ)
+     4. Parser (Таҳлили синтаксисӣ)
+     5. Interpreter (Иҷрокунанда)
+     6. Syntax Highlighter (Рангубор)
+     7. Editor (Муҳаррир)
+     8. FileManager (Идоракунии файлҳо)
+     9. ConsoleManager (Идоракунии консол)
+    10. UIManager (Идоракунии интерфейс)
+    11. NotificationManager
+    12. ModalManager
+    13. KeyboardShortcuts
+    14. Application (Асосӣ)
+   ============================================================ */
+
+(function() {
+    'use strict';
+
+    /* ========================================================
+       1. CONSTANTS & CONFIGURATION
+       ======================================================== */
+    
+    const CONFIG = {
+        APP_NAME: 'SHT Python TJ',
+        VERSION: '1.0.0',
+        STORAGE_KEY: 'sht_python_tj_data',
+        AUTOSAVE_DELAY: 1000,
+        DEFAULT_FILE_NAME: 'asosi.tjpy',
+        DEFAULT_CODE: 'функсия салом():\n    нишон("Салом дунё!")\n\nсалом()\n',
+        MAX_LOOP_ITERATIONS: 100000,
+        MAX_RECURSION_DEPTH: 200
+    };
+
+    // Калимаҳои калидии тоҷикӣ → JS-эквивалент
+    const KEYWORDS = {
+        'агар': 'if',
+        'вагарна': 'else',
+        'ё_агар': 'elif',
+        'барои': 'for',
+        'то': 'while',
+        'дар': 'in',
+        'функсия': 'def',
+        'баргардон': 'return',
+        'рост': 'True',
+        'дурӯғ': 'False',
+        'холӣ': 'None',
+        'ва': 'and',
+        'ё': 'or',
+        'на': 'not',
+        'шикан': 'break',
+        'давом': 'continue',
+        'кӯшиш': 'try',
+        'хато': 'except',
+        'ниҳоят': 'finally',
+        'пайдо': 'pass',
+        'воридкун': 'import',
+        'аз': 'from',
+        'ҳамчун': 'as',
+        'синф': 'class',
+        'худ': 'self',
+        'нав': 'new',
+        'ҳосил': 'yield',
+        'тасдиқ': 'assert',
+        'нест_кун': 'del',
+        'ҷаҳонӣ': 'global'
+    };
+
+    // Функсияҳои дохилӣ
+    const BUILTINS = [
+        'нишон', 'дарёфт', 'дарозӣ', 'диапазон', 'намуд',
+        'ҷамъ', 'якчанд', 'минимум', 'максимум', 'рӯбардор',
+        'мутлақ', 'дум', 'рӯйхат', 'қатор', 'адад', 'дуӣ',
+        'мантиқӣ', 'тағйир', 'тартиб', 'баргарт', 'дохил'
+    ];
+
+    /* ========================================================
+       2. UTILITY FUNCTIONS
+       ======================================================== */
+    
+    const Utils = {
+        // Тавлиди ID-и беҳамто
+        uuid() {
+            return 'id-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        },
+        
+        // Escape HTML
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        },
+        
+        // Debounce
+        debounce(fn, delay) {
+            let timer;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        },
+        
+        // Throttle
+        throttle(fn, delay) {
+            let last = 0;
+            return function(...args) {
+                const now = Date.now();
+                if (now - last >= delay) {
+                    last = now;
+                    fn.apply(this, args);
+                }
+            };
+        },
+        
+        // Сохтани оғози сатр
+        startsWithAny(str, prefixes) {
+            return prefixes.some(p => str.startsWith(p));
+        },
+        
+        // Форматкунии вақт
+        formatTime(date) {
+            const d = date || new Date();
+            return d.toTimeString().split(' ')[0];
+        },
+        
+        // Сабт ба localStorage бо хатогигирӣ
+        saveStorage(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+                return true;
+            } catch(e) {
+                console.error('Хато ҳангоми сабт ба localStorage:', e);
+                return false;
+            }
+        },
+        
+        // Хондан аз localStorage
+        loadStorage(key, defaultValue = null) {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : defaultValue;
+            } catch(e) {
+                console.error('Хато ҳангоми хондан аз localStorage:', e);
+                return defaultValue;
+            }
+        },
+        
+        // Боргирии файл
+        downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    };
+
+    /* ========================================================
+       3. LEXER (Таҳлили лексикӣ)
+       ======================================================== */
+    
+    class Token {
+        constructor(type, value, line, col) {
+            this.type = type;
+            this.value = value;
+            this.line = line;
+            this.col = col;
+        }
+    }
+
+    class Lexer {
+        constructor(source) {
+            this.source = source;
+            this.pos = 0;
+            this.line = 1;
+            this.col = 1;
+            this.tokens = [];
+            this.indentStack = [0];
+        }
+        
+        peek(offset = 0) {
+            return this.source[this.pos + offset];
+        }
+        
+        advance() {
+            const ch = this.source[this.pos++];
+            if (ch === '\n') {
+                this.line++;
+                this.col = 1;
+            } else {
+                this.col++;
+            }
+            return ch;
+        }
+        
+        isAtEnd() {
+            return this.pos >= this.source.length;
+        }
+        
+        isDigit(ch) {
+            return ch >= '0' && ch <= '9';
+        }
+        
+        isAlpha(ch) {
+            if (!ch) return false;
+            // Тоҷикӣ ва лотинӣ
+            return /[a-zA-Zа-яА-ЯёЁӣӢӯӮғҒқҚҳҲҷҶ_]/.test(ch);
+        }
+        
+        isAlphaNum(ch) {
+            return this.isAlpha(ch) || this.isDigit(ch);
+        }
+        
+        // Хондани адад
+        readNumber() {
+            const startCol = this.col;
+            let value = '';
+            while (!this.isAtEnd() && (this.isDigit(this.peek()) || this.peek() === '.')) {
+                value += this.advance();
+            }
+            return new Token('NUMBER', parseFloat(value), this.line, startCol);
+        }
+        
+        // Хондани сатр (string)
+        readString(quote) {
+            const startLine = this.line;
+            const startCol = this.col;
+            this.advance(); // skip opening quote
+            let value = '';
+            while (!this.isAtEnd() && this.peek() !== quote) {
+                if (this.peek() === '\\') {
+                    this.advance();
+                    const next = this.advance();
+                    const escapes = {
+                        'n': '\n', 't': '\t', 'r': '\r',
+                        '\\': '\\', '"': '"', "'": "'"
+                    };
+                    value += escapes[next] || next;
+                } else {
+                    value += this.advance();
+                }
+            }
+            if (this.isAtEnd()) {
+                throw new TJError('Сатр пӯшида нашудааст', startLine, startCol);
+            }
+            this.advance(); // skip closing quote
+            return new Token('STRING', value, startLine, startCol);
+        }
+        
+        // Хондани идентификатор/калимаи калидӣ
+        readIdentifier() {
+            const startCol = this.col;
+            let value = '';
+            while (!this.isAtEnd() && this.isAlphaNum(this.peek())) {
+                value += this.advance();
+            }
+            
+            // Калимаҳои махсус
+            if (value === 'рост') return new Token('BOOLEAN', true, this.line, startCol);
+            if (value === 'дурӯғ') return new Token('BOOLEAN', false, this.line, startCol);
+            if (value === 'холӣ') return new Token('NONE', null, this.line, startCol);
+            
+            if (KEYWORDS[value]) {
+                return new Token('KEYWORD', value, this.line, startCol);
+            }
+            
+            return new Token('IDENT', value, this.line, startCol);
+        }
+        
+        // Скип comment
+        skipComment() {
+            while (!this.isAtEnd() && this.peek() !== '\n') {
+                this.advance();
+            }
+        }
+        
+        // Гирифтани сатри ҷорӣ барои санҷиши indent
+        readIndent() {
+            let indent = 0;
+            while (!this.isAtEnd() && (this.peek() === ' ' || this.peek() === '\t')) {
+                if (this.peek() === '\t') {
+                    indent += 4;
+                } else {
+                    indent += 1;
+                }
+                this.advance();
+            }
+            return indent;
+        }
+        
+        // Асосӣ tokenize
+        tokenize() {
+            let atLineStart = true;
+            
+            while (!this.isAtEnd()) {
+                // Дар оғози сатр – санҷиши indent
+                if (atLineStart) {
+                    // Пеш аз ин санҷем, оё сатр холӣ ё comment-аст
+                    const savedPos = this.pos;
+                    const savedLine = this.line;
+                    const savedCol = this.col;
+                    
+                    const indent = this.readIndent();
+                    
+                    // Агар сатр холӣ ё comment бошад – ҷаҳида гузарем
+                    if (this.peek() === '\n' || this.peek() === '#' || this.isAtEnd()) {
+                        atLineStart = false;
+                        continue;
+                    }
+                    
+                    const lastIndent = this.indentStack[this.indentStack.length - 1];
+                    
+                    if (indent > lastIndent) {
+                        this.indentStack.push(indent);
+                        this.tokens.push(new Token('INDENT', indent, this.line, 1));
+                    } else if (indent < lastIndent) {
+                        while (this.indentStack.length > 1 && this.indentStack[this.indentStack.length - 1] > indent) {
+                            this.indentStack.pop();
+                            this.tokens.push(new Token('DEDENT', null, this.line, 1));
+                        }
+                    }
+                    
+                    atLineStart = false;
+                    continue;
+                }
+                
+                const ch = this.peek();
+                
+                // Whitespace
+                if (ch === ' ' || ch === '\t') {
+                    this.advance();
+                    continue;
+                }
+                
+                // Сатри нав
+                if (ch === '\n') {
+                    this.tokens.push(new Token('NEWLINE', '\n', this.line, this.col));
+                    this.advance();
+                    atLineStart = true;
+                    continue;
+                }
+                
+                // Комментариҳо
+                if (ch === '#') {
+                    this.skipComment();
+                    continue;
+                }
+                
+                // Ададҳо
+                if (this.isDigit(ch)) {
+                    this.tokens.push(this.readNumber());
+                    continue;
+                }
+                
+                // Сатрҳо
+                if (ch === '"' || ch === "'") {
+                    this.tokens.push(this.readString(ch));
+                    continue;
+                }
+                
+                // Идентификаторҳо
+                if (this.isAlpha(ch)) {
+                    this.tokens.push(this.readIdentifier());
+                    continue;
+                }
+                
+                // Операторҳои дугона
+                const twoChar = ch + (this.peek(1) || '');
+                const twoCharOps = ['==', '!=', '<=', '>=', '+=', '-=', '*=', '/=', '**', '//', '->'];
+                if (twoCharOps.includes(twoChar)) {
+                    this.tokens.push(new Token('OP', twoChar, this.line, this.col));
+                    this.advance();
+                    this.advance();
+                    continue;
+                }
+                
+                // Операторҳои якка
+                const singleOps = '+-*/%=<>!()[]{},:.;@';
+                if (singleOps.includes(ch)) {
+                    this.tokens.push(new Token('OP', ch, this.line, this.col));
+                    this.advance();
+                    continue;
+                }
+                
+                throw new TJError(`Аломати ношинос: '${ch}'`, this.line, this.col);
+            }
+            
+            // Дедент-ҳои охирин
+            while (this.indentStack.length > 1) {
+                this.indentStack.pop();
+                this.tokens.push(new Token('DEDENT', null, this.line, this.col));
+            }
+            this.tokens.push(new Token('EOF', null, this.line, this.col));
+            
+            return this.tokens;
+        }
+    }
+
+    /* ========================================================
+       Custom Error class
+       ======================================================== */
+    class TJError extends Error {
+        constructor(message, line, col) {
+            super(message);
+            this.name = 'TJError';
+            this.line = line || 0;
+            this.col = col || 0;
+        }
+    }
+
+    /* ========================================================
+       4. PARSER (Таҳлили синтаксисӣ)
+       ======================================================== */
+    
+    class Parser {
+        constructor(tokens) {
+            this.tokens = tokens;
+            this.pos = 0;
+        }
+        
+        peek(offset = 0) {
+            return this.tokens[this.pos + offset];
+        }
+        
+        current() {
+            return this.tokens[this.pos];
+        }
+        
+        advance() {
+            return this.tokens[this.pos++];
+        }
+        
+        check(type, value) {
+            const tok = this.current();
+            if (!tok) return false;
+            if (tok.type !== type) return false;
+            if (value !== undefined && tok.value !== value) return false;
+            return true;
+        }
+        
+        match(type, value) {
+            if (this.check(type, value)) {
+                return this.advance();
+            }
+            return null;
+        }
+        
+        expect(type, value) {
+            if (this.check(type, value)) {
+                return this.advance();
+            }
+            const tok = this.current();
+            const expected = value !== undefined ? `'${value}'` : type;
+            const got = tok ? `'${tok.value}' (${tok.type})` : 'EOF';
+            throw new TJError(`Интизор будам ${expected}, аммо ${got}-ро ёфтам`, tok ? tok.line : 0, tok ? tok.col : 0);
+        }
+        
+        skipNewlines() {
+            while (this.check('NEWLINE')) {
+                this.advance();
+            }
+        }
+        
+        // ===== Парсинги барнома =====
+        parseProgram() {
+            const statements = [];
+            this.skipNewlines();
+            while (!this.check('EOF')) {
+                const stmt = this.parseStatement();
+                if (stmt) statements.push(stmt);
+                this.skipNewlines();
+            }
+            return { type: 'Program', body: statements };
+        }
+        
+        // ===== Statement =====
+        parseStatement() {
+            const tok = this.current();
+            
+            if (tok.type === 'KEYWORD') {
+                switch (tok.value) {
+                    case 'агар': return this.parseIf();
+                    case 'то': return this.parseWhile();
+                    case 'барои': return this.parseFor();
+                    case 'функсия': return this.parseFunction();
+                    case 'баргардон': return this.parseReturn();
+                    case 'шикан': this.advance(); return { type: 'Break', line: tok.line };
+                    case 'давом': this.advance(); return { type: 'Continue', line: tok.line };
+                    case 'пайдо': this.advance(); return { type: 'Pass', line: tok.line };
+                }
+            }
+            
+            return this.parseExpressionStatement();
+        }
+        
+        // ===== If =====
+        parseIf() {
+            const tok = this.advance(); // агар
+            const condition = this.parseExpression();
+            this.expect('OP', ':');
+            this.skipNewlines();
+            const thenBody = this.parseBlock();
+            
+            let elseBody = null;
+            this.skipNewlines();
+            
+            if (this.check('KEYWORD', 'ё_агар')) {
+                elseBody = [this.parseIf()];
+            } else if (this.check('KEYWORD', 'вагарна')) {
+                this.advance();
+                this.expect('OP', ':');
+                this.skipNewlines();
+                elseBody = this.parseBlock();
+            }
+            
+            return { type: 'If', condition, thenBody, elseBody, line: tok.line };
+        }
+        
+        // ===== While =====
+        parseWhile() {
+            const tok = this.advance(); // то
+            const condition = this.parseExpression();
+            this.expect('OP', ':');
+            this.skipNewlines();
+            const body = this.parseBlock();
+            return { type: 'While', condition, body, line: tok.line };
+        }
+        
+        // ===== For =====
+        parseFor() {
+            const tok = this.advance(); // барои
+            const varName = this.expect('IDENT').value;
+            this.expect('KEYWORD', 'дар');
+            const iterable = this.parseExpression();
+            this.expect('OP', ':');
+            this.skipNewlines();
+            const body = this.parseBlock();
+            return { type: 'For', varName, iterable, body, line: tok.line };
+        }
+        
+        // ===== Function =====
+        parseFunction() {
+            const tok = this.advance(); // функсия
+            const name = this.expect('IDENT').value;
+            this.expect('OP', '(');
+            
+            const params = [];
+            if (!this.check('OP', ')')) {
+                params.push(this.expect('IDENT').value);
+                while (this.match('OP', ',')) {
+                    params.push(this.expect('IDENT').value);
+                }
+            }
+            this.expect('OP', ')');
+            this.expect('OP', ':');
+            this.skipNewlines();
+            const body = this.parseBlock();
+            return { type: 'Function', name, params, body, line: tok.line };
+        }
+        
+        // ===== Return =====
+        parseReturn() {
+            const tok = this.advance();
+            let value = null;
+            if (!this.check('NEWLINE') && !this.check('EOF') && !this.check('DEDENT')) {
+                value = this.parseExpression();
+            }
+            return { type: 'Return', value, line: tok.line };
+        }
+        
+        // ===== Block (бо INDENT/DEDENT) =====
+        parseBlock() {
+            const statements = [];
+            
+            if (this.check('INDENT')) {
+                this.advance();
+                this.skipNewlines();
+                while (!this.check('DEDENT') && !this.check('EOF')) {
+                    const stmt = this.parseStatement();
+                    if (stmt) statements.push(stmt);
+                    this.skipNewlines();
+                }
+                if (this.check('DEDENT')) this.advance();
+            } else {
+                // Як сатр
+                const stmt = this.parseStatement();
+                if (stmt) statements.push(stmt);
+            }
+            
+            return statements;
+        }
+        
+        // ===== Expression statement (e.g. assignment, call) =====
+        parseExpressionStatement() {
+            const expr = this.parseExpression();
+            
+            // Assignment?
+            if (this.check('OP', '=')) {
+                this.advance();
+                const value = this.parseExpression();
+                return { type: 'Assignment', target: expr, value, line: expr.line };
+            }
+            
+            // Compound assignments
+            const compounds = ['+=', '-=', '*=', '/='];
+            for (const op of compounds) {
+                if (this.check('OP', op)) {
+                    this.advance();
+                    const value = this.parseExpression();
+                    return {
+                        type: 'CompoundAssignment',
+                        target: expr,
+                        op: op,
+                        value,
+                        line: expr.line
+                    };
+                }
+            }
+            
+            return { type: 'ExpressionStatement', expression: expr, line: expr.line };
+        }
+        
+        // ===== Expression =====
+        parseExpression() {
+            return this.parseLogicalOr();
+        }
+        
+        parseLogicalOr() {
+            let left = this.parseLogicalAnd();
+            while (this.check('KEYWORD', 'ё')) {
+                const op = this.advance().value;
+                const right = this.parseLogicalAnd();
+                left = { type: 'BinaryOp', op, left, right, line: left.line };
+            }
+            return left;
+        }
+        
+        parseLogicalAnd() {
+            let left = this.parseLogicalNot();
+            while (this.check('KEYWORD', 'ва')) {
+                const op = this.advance().value;
+                const right = this.parseLogicalNot();
+                left = { type: 'BinaryOp', op, left, right, line: left.line };
+            }
+            return left;
+        }
+        
+        parseLogicalNot() {
+            if (this.check('KEYWORD', 'на')) {
+                const tok = this.advance();
+                const operand = this.parseLogicalNot();
+                return { type: 'UnaryOp', op: 'на', operand, line: tok.line };
+            }
+            return this.parseComparison();
+        }
+        
+        parseComparison() {
+            let left = this.parseAddition();
+            const compOps = ['==', '!=', '<', '>', '<=', '>='];
+            while (this.current() && compOps.includes(this.current().value)) {
+                const op = this.advance().value;
+                const right = this.parseAddition();
+                left = { type: 'BinaryOp', op, left, right, line: left.line };
+            }
+            return left;
+        }
+        
+        parseAddition() {
+            let left = this.parseMultiplication();
+            while (this.current() && (this.current().value === '+' || this.current().value === '-')) {
+                const op = this.advance().value;
+                const right = this.parseMultiplication();
+                left = { type: 'BinaryOp', op, left, right, line: left.line };
+            }
+            return left;
+        }
+        
+        parseMultiplication() {
+            let left = this.parseUnary();
+            while (this.current() && ['*', '/', '%', '//'].includes(this.current().value)) {
+                const op = this.advance().value;
+                const right = this.parseUnary();
+                left = { type: 'BinaryOp', op, left, right, line: left.line };
+            }
+            return left;
+        }
+        
+        parseUnary() {
+            if (this.check('OP', '-') || this.check('OP', '+')) {
+                const tok = this.advance();
+                const operand = this.parseUnary();
+                return { type: 'UnaryOp', op: tok.value, operand, line: tok.line };
+            }
+            return this.parsePower();
+        }
+        
+        parsePower() {
+            let left = this.parsePostfix();
+            if (this.check('OP', '**')) {
+                this.advance();
+                const right = this.parseUnary();
+                return { type: 'BinaryOp', op: '**', left, right, line: left.line };
+            }
+            return left;
+        }
+        
+        parsePostfix() {
+            let expr = this.parsePrimary();
+            
+            while (true) {
+                if (this.check('OP', '(')) {
+                    // Даъвати функсия
+                    this.advance();
+                    const args = [];
+                    if (!this.check('OP', ')')) {
+                        args.push(this.parseExpression());
+                        while (this.match('OP', ',')) {
+                            args.push(this.parseExpression());
+                        }
+                    }
+                    this.expect('OP', ')');
+                    expr = { type: 'Call', callee: expr, args, line: expr.line };
+                } else if (this.check('OP', '[')) {
+                    // Индексатсия
+                    this.advance();
+                    const index = this.parseExpression();
+                    this.expect('OP', ']');
+                    expr = { type: 'Index', object: expr, index, line: expr.line };
+                } else if (this.check('OP', '.')) {
+                    // Member access
+                    this.advance();
+                    const member = this.expect('IDENT').value;
+                    expr = { type: 'Member', object: expr, member, line: expr.line };
+                } else {
+                    break;
+                }
+            }
+            
+            return expr;
+        }
+        
+        parsePrimary() {
+            const tok = this.current();
+            
+            if (!tok) {
+                throw new TJError('Ифода интизор буд', 0, 0);
+            }
+            
+            if (tok.type === 'NUMBER') {
+                this.advance();
+                return { type: 'Number', value: tok.value, line: tok.line };
+            }
+            
+            if (tok.type === 'STRING') {
+                this.advance();
+                return { type: 'String', value: tok.value, line: tok.line };
+            }
+            
+            if (tok.type === 'BOOLEAN') {
+                this.advance();
+                return { type: 'Boolean', value: tok.value, line: tok.line };
+            }
+            
+            if (tok.type === 'NONE') {
+                this.advance();
+                return { type: 'None', value: null, line: tok.line };
+            }
+            
+            if (tok.type === 'IDENT') {
+                this.advance();
+                return { type: 'Identifier', name: tok.value, line: tok.line };
+            }
+            
+            if (this.check('OP', '(')) {
+                this.advance();
+                const expr = this.parseExpression();
+                this.expect('OP', ')');
+                return expr;
+            }
+            
+            if (this.check('OP', '[')) {
+                // Рӯйхат
+                const startTok = this.advance();
+                const elements = [];
+                if (!this.check('OP', ']')) {
+                    elements.push(this.parseExpression());
+                    while (this.match('OP', ',')) {
+                        if (this.check('OP', ']')) break;
+                        elements.push(this.parseExpression());
+                    }
+                }
+                this.expect('OP', ']');
+                return { type: 'List', elements, line: startTok.line };
+            }
+            
+            throw new TJError(`Ифодаи нодуруст: '${tok.value}'`, tok.line, tok.col);
+        }
+    }
+
+    /* ========================================================
+       5. INTERPRETER (Иҷрокунанда)
+       ======================================================== */
+    
+    class Environment {
+        constructor(parent = null) {
+            this.vars = new Map();
+            this.parent = parent;
+        }
+        
+        get(name) {
+            if (this.vars.has(name)) return this.vars.get(name);
+            if (this.parent) return this.parent.get(name);
+            throw new TJError(`Тағйирёбандаи '${name}' муайян нашудааст`);
+        }
+        
+        set(name, value) {
+            // Агар тағйирёбанда дар родитель мавҷуд бошад – он ҷо тағйир медиҳем
+            if (this.vars.has(name)) {
+                this.vars.set(name, value);
+                return;
+            }
+            let env = this.parent;
+            while (env) {
+                if (env.vars.has(name)) {
+                    env.vars.set(name, value);
+                    return;
+                }
+                env = env.parent;
+            }
+            this.vars.set(name, value);
+        }
+        
+        define(name, value) {
+            this.vars.set(name, value);
+        }
+        
+        has(name) {
+            if (this.vars.has(name)) return true;
+            if (this.parent) return this.parent.has(name);
+            return false;
+        }
+    }
+    
+    // Махсус барои return/break/continue
+    class ReturnSignal { constructor(value) { this.value = value; } }
+    class BreakSignal {}
+    class ContinueSignal {}
+    
+    class Interpreter {
+        constructor(consoleManager) {
+            this.console = consoleManager;
+            this.globalEnv = new Environment();
+            this.loopCount = 0;
+            this.callDepth = 0;
+            this.stopped = false;
+            this.setupBuiltins();
+        }
+        
+        setupBuiltins() {
+            const self = this;
+            
+            // нишон() - print
+            this.globalEnv.define('нишон', {
+                isBuiltin: true,
+                call(args) {
+                    const text = args.map(a => self.stringify(a)).join(' ');
+                    self.console.log(text, 'output');
+                    return null;
+                }
+            });
+            
+            // print (низ кор мекунад)
+            this.globalEnv.define('print', this.globalEnv.get('нишон'));
+            
+            // дарёфт() - input (синхронӣ нест дар бровсер, prompt истифода мекунем)
+            this.globalEnv.define('дарёфт', {
+                isBuiltin: true,
+                call(args) {
+                    const message = args.length > 0 ? self.stringify(args[0]) : '';
+                    const result = prompt(message);
+                    return result === null ? '' : result;
+                }
+            });
+            
+            // дарозӣ() - len
+            this.globalEnv.define('дарозӣ', {
+                isBuiltin: true,
+                call(args) {
+                    if (args.length === 0) throw new TJError('дарозӣ() аргумент талаб мекунад');
+                    const v = args[0];
+                    if (typeof v === 'string') return v.length;
+                    if (Array.isArray(v)) return v.length;
+                    throw new TJError('дарозӣ() барои ин намуд кор намекунад');
+                }
+            });
+            
+            // диапазон() - range
+            this.globalEnv.define('диапазон', {
+                isBuiltin: true,
+                call(args) {
+                    let start = 0, stop = 0, step = 1;
+                    if (args.length === 1) {
+                        stop = args[0];
+                    } else if (args.length === 2) {
+                        start = args[0]; stop = args[1];
+                    } else if (args.length >= 3) {
+                        start = args[0]; stop = args[1]; step = args[2];
+                    }
+                    const result = [];
+                    if (step > 0) {
+                        for (let i = start; i < stop; i += step) result.push(i);
+                    } else if (step < 0) {
+                        for (let i = start; i > stop; i += step) result.push(i);
+                    }
+                    return result;
+                }
+            });
+            this.globalEnv.define('range', this.globalEnv.get('диапазон'));
+            
+            // намуд() - type
+            this.globalEnv.define('намуд', {
+                isBuiltin: true,
+                call(args) {
+                    const v = args[0];
+                    if (v === null) return 'холӣ';
+                    if (typeof v === 'boolean') return 'мантиқӣ';
+                    if (typeof v === 'number') return 'адад';
+                    if (typeof v === 'string') return 'сатр';
+                    if (Array.isArray(v)) return 'рӯйхат';
+                    if (typeof v === 'function' || (v && v.isBuiltin)) return 'функсия';
+                    return 'номаълум';
+                }
+            });
+            
+            // адад() - int/float conversion
+            this.globalEnv.define('адад', {
+                isBuiltin: true,
+                call(args) {
+                    const v = args[0];
+                    const n = parseFloat(v);
+                    if (isNaN(n)) throw new TJError(`Наметавонам '${v}'-ро ба адад табдил диҳам`);
+                    return n;
+                }
+            });
+            
+            // қатор() - str conversion
+            this.globalEnv.define('қатор', {
+                isBuiltin: true,
+                call(args) {
+                    return self.stringify(args[0]);
+                }
+            });
+            
+            // ҷамъ() - sum
+            this.globalEnv.define('ҷамъ', {
+                isBuiltin: true,
+                call(args) {
+                    const list = args[0];
+                    if (!Array.isArray(list)) throw new TJError('ҷамъ() рӯйхат талаб мекунад');
+                    return list.reduce((a, b) => a + b, 0);
+                }
+            });
+            
+            // минимум, максимум
+            this.globalEnv.define('минимум', {
+                isBuiltin: true,
+                call(args) {
+                    const list = Array.isArray(args[0]) ? args[0] : args;
+                    return Math.min(...list);
+                }
+            });
+            this.globalEnv.define('максимум', {
+                isBuiltin: true,
+                call(args) {
+                    const list = Array.isArray(args[0]) ? args[0] : args;
+                    return Math.max(...list);
+                }
+            });
+            
+            // мутлақ - abs
+            this.globalEnv.define('мутлақ', {
+                isBuiltin: true,
+                call(args) { return Math.abs(args[0]); }
+            });
+            
+            // дум - round
+            this.globalEnv.define('дум', {
+                isBuiltin: true,
+                call(args) { return Math.round(args[0]); }
+            });
+            
+            // тартиб - sorted
+            this.globalEnv.define('тартиб', {
+                isBuiltin: true,
+                call(args) {
+                    const list = [...args[0]];
+                    return list.sort((a,b) => {
+                        if (typeof a === 'number') return a - b;
+                        return String(a).localeCompare(String(b));
+                    });
+                }
+            });
+            
+            // баргарт - reversed
+            this.globalEnv.define('баргарт', {
+                isBuiltin: true,
+                call(args) {
+                    return [...args[0]].reverse();
+                }
+            });
+        }
+        
+        stringify(value) {
+            if (value === null || value === undefined) return 'холӣ';
+            if (typeof value === 'boolean') return value ? 'рост' : 'дурӯғ';
+            if (Array.isArray(value)) {
+                return '[' + value.map(v => {
+                    if (typeof v === 'string') return '"' + v + '"';
+                    return this.stringify(v);
+                }).join(', ') + ']';
+            }
+            if (typeof value === 'object' && value.isBuiltin) return '<функсияи дохилӣ>';
+            if (typeof value === 'object' && value.isFunction) return `<функсияи ${value.name}>`;
+            return String(value);
+        }
+        
+        // Иҷрои барнома
+        async run(source) {
+            this.stopped = false;
+            this.loopCount = 0;
+            this.callDepth = 0;
+            
+            try {
+                const lexer = new Lexer(source);
+                const tokens = lexer.tokenize();
+                const parser = new Parser(tokens);
+                const ast = parser.parseProgram();
+                
+                this.executeBlock(ast.body, this.globalEnv);
+                return { success: true };
+            } catch(e) {
+                if (e instanceof TJError) {
+                    return { success: false, error: e };
+                }
+                throw e;
+            }
+        }
+        
+        executeBlock(statements, env) {
+            for (const stmt of statements) {
+                if (this.stopped) return;
+                this.execute(stmt, env);
+            }
+        }
+        
+        execute(node, env) {
+            if (this.stopped) return null;
+            
+            switch (node.type) {
+                case 'ExpressionStatement':
+                    return this.evaluate(node.expression, env);
+                    
+                case 'Assignment': {
+                    const value = this.evaluate(node.value, env);
+                    this.assign(node.target, value, env);
+                    return value;
+                }
+                
+                case 'CompoundAssignment': {
+                    const current = this.evaluate(node.target, env);
+                    const rhs = this.evaluate(node.value, env);
+                    let result;
+                    switch(node.op) {
+                        case '+=': result = current + rhs; break;
+                        case '-=': result = current - rhs; break;
+                        case '*=': result = current * rhs; break;
+                        case '/=': result = current / rhs; break;
+                    }
+                    this.assign(node.target, result, env);
+                    return result;
+                }
+                
+                case 'If': {
+                    const cond = this.evaluate(node.condition, env);
+                    if (this.isTruthy(cond)) {
+                        this.executeBlock(node.thenBody, env);
+                    } else if (node.elseBody) {
+                        this.executeBlock(node.elseBody, env);
+                    }
+                    return null;
+                }
+                
+                case 'While': {
+                    while (this.isTruthy(this.evaluate(node.condition, env))) {
+                        if (++this.loopCount > CONFIG.MAX_LOOP_ITERATIONS) {
+                            throw new TJError('Сикл хеле зиёд иҷро шуд (эҳтимолан бесон)', node.line);
+                        }
+                        if (this.stopped) return;
+                        try {
+                            this.executeBlock(node.body, env);
+                        } catch(e) {
+                            if (e instanceof BreakSignal) break;
+                            if (e instanceof ContinueSignal) continue;
+                            throw e;
+                        }
+                    }
+                    return null;
+                }
+                
+                case 'For': {
+                    const iterable = this.evaluate(node.iterable, env);
+                    if (!Array.isArray(iterable) && typeof iterable !== 'string') {
+                        throw new TJError('Дар сикли барои танҳо рӯйхат ё сатр истифода кардан мумкин аст', node.line);
+                    }
+                    for (const item of iterable) {
+                        if (++this.loopCount > CONFIG.MAX_LOOP_ITERATIONS) {
+                            throw new TJError('Сикл хеле зиёд иҷро шуд', node.line);
+                        }
+                        if (this.stopped) return;
+                        env.define(node.varName, item);
+                        try {
+                            this.executeBlock(node.body, env);
+                        } catch(e) {
+                            if (e instanceof BreakSignal) return;
+                            if (e instanceof ContinueSignal) continue;
+                            throw e;
+                        }
+                    }
+                    return null;
+                }
+                
+                case 'Function': {
+                    const fn = {
+                        isFunction: true,
+                        name: node.name,
+                        params: node.params,
+                        body: node.body,
+                        closure: env
+                    };
+                    env.define(node.name, fn);
+                    return null;
+                }
+                
+                case 'Return': {
+                    const value = node.value ? this.evaluate(node.value, env) : null;
+                    throw new ReturnSignal(value);
+                }
+                
+                case 'Break': throw new BreakSignal();
+                case 'Continue': throw new ContinueSignal();
+                case 'Pass': return null;
+                
+                default:
+                    return this.evaluate(node, env);
+            }
+        }
+        
+        assign(target, value, env) {
+            if (target.type === 'Identifier') {
+                env.set(target.name, value);
+            } else if (target.type === 'Index') {
+                const obj = this.evaluate(target.object, env);
+                const idx = this.evaluate(target.index, env);
+                if (Array.isArray(obj)) {
+                    obj[idx] = value;
+                } else {
+                    throw new TJError('Танҳо рӯйхатҳоро индексатсия кардан мумкин', target.line);
+                }
+            } else {
+                throw new TJError('Ҳадафи нодурусти таъинот', target.line);
+            }
+        }
+        
+        evaluate(node, env) {
+            if (this.stopped) return null;
+            
+            switch (node.type) {
+                case 'Number': return node.value;
+                case 'String': return node.value;
+                case 'Boolean': return node.value;
+                case 'None': return null;
+                
+                case 'Identifier': {
+                    if (!env.has(node.name)) {
+                        throw new TJError(`Тағйирёбандаи '${node.name}' муайян нашудааст`, node.line);
+                    }
+                    return env.get(node.name);
+                }
+                
+                case 'List':
+                    return node.elements.map(el => this.evaluate(el, env));
+                
+                case 'BinaryOp': {
+                    const left = this.evaluate(node.left, env);
+                    
+                    // Short-circuit
+                    if (node.op === 'ва') {
+                        return this.isTruthy(left) ? this.evaluate(node.right, env) : left;
+                    }
+                    if (node.op === 'ё') {
+                        return this.isTruthy(left) ? left : this.evaluate(node.right, env);
+                    }
+                    
+                    const right = this.evaluate(node.right, env);
+                    return this.binaryOp(node.op, left, right, node.line);
+                }
+                
+                case 'UnaryOp': {
+                    const operand = this.evaluate(node.operand, env);
+                    switch (node.op) {
+                        case '-': return -operand;
+                        case '+': return +operand;
+                        case 'на': return !this.isTruthy(operand);
+                    }
+                    throw new TJError(`Операторе ношинос: '${node.op}'`, node.line);
+                }
+                
+                case 'Call': {
+                    const callee = this.evaluate(node.callee, env);
+                    const args = node.args.map(a => this.evaluate(a, env));
+                    return this.callFunction(callee, args, node.line);
+                }
+                
+                case 'Index': {
+                    const obj = this.evaluate(node.object, env);
+                    const idx = this.evaluate(node.index, env);
+                    if (Array.isArray(obj) || typeof obj === 'string') {
+                        let i = idx;
+                        if (i < 0) i = obj.length + i;
+                        if (i < 0 || i >= obj.length) {
+                            throw new TJError(`Индекс берун аз ҳудуд: ${idx}`, node.line);
+                        }
+                        return obj[i];
+                    }
+                    throw new TJError('Танҳо рӯйхатҳо/сатрҳоро индексатсия кардан мумкин', node.line);
+                }
+                
+                case 'Member': {
+                    const obj = this.evaluate(node.object, env);
+                    return this.getMember(obj, node.member, node.line);
+                }
+            }
+            
+            throw new TJError(`Намуди номаълум: ${node.type}`, node.line);
+        }
+        
+        callFunction(fn, args, line) {
+            if (fn && fn.isBuiltin) {
+                return fn.call(args);
+            }
+            
+            if (fn && fn.isFunction) {
+                if (++this.callDepth > CONFIG.MAX_RECURSION_DEPTH) {
+                    throw new TJError('Чуқурии рекурсия аз ҳад зиёд аст', line);
+                }
+                const env = new Environment(fn.closure);
+                fn.params.forEach((param, i) => {
+                    env.define(param, args[i] !== undefined ? args[i] : null);
+                });
+                let result = null;
+                try {
+                    this.executeBlock(fn.body, env);
+                } catch(e) {
+                    if (e instanceof ReturnSignal) {
+                        result = e.value;
+                    } else {
+                        this.callDepth--;
+                        throw e;
+                    }
+                }
+                this.callDepth--;
+                return result;
+            }
+            
+            throw new TJError('Объект функсия нест', line);
+        }
+        
+        getMember(obj, member, line) {
+            if (typeof obj === 'string') {
+                if (member === 'дарозӣ' || member === 'length') return obj.length;
+                if (member === 'боло') return { isBuiltin: true, call: () => obj.toUpperCase() };
+                if (member === 'поён') return { isBuiltin: true, call: () => obj.toLowerCase() };
+            }
+            if (Array.isArray(obj)) {
+                if (member === 'дарозӣ' || member === 'length') return obj.length;
+                if (member === 'илова') return { isBuiltin: true, call: (args) => { obj.push(args[0]); return null; } };
+                if (member === 'хориҷ') return { isBuiltin: true, call: () => obj.pop() };
+            }
+            throw new TJError(`Хосияти '${member}' вуҷуд надорад`, line);
+        }
+        
+        binaryOp(op, left, right, line) {
+            switch (op) {
+                case '+':
+                    if (typeof left === 'string' || typeof right === 'string') {
+                        return this.stringify(left) + this.stringify(right);
+                    }
+                    return left + right;
+                case '-': return left - right;
+                case '*':
+                    if (typeof left === 'string' && typeof right === 'number') return left.repeat(right);
+                    return left * right;
+                case '/':
+                    if (right === 0) throw new TJError('Тақсим ба сифр', line);
+                    return left / right;
+                case '//':
+                    if (right === 0) throw new TJError('Тақсим ба сифр', line);
+                    return Math.floor(left / right);
+                case '%':
+                    if (right === 0) throw new TJError('Тақсим ба сифр', line);
+                    return left % right;
+                case '**': return Math.pow(left, right);
+                case '==': return left === right;
+                case '!=': return left !== right;
+                case '<': return left < right;
+                case '>': return left > right;
+                case '<=': return left <= right;
+                case '>=': return left >= right;
+            }
+            throw new TJError(`Оператори номаълум: ${op}`, line);
+        }
+        
+        isTruthy(value) {
+            if (value === null || value === undefined) return false;
+            if (value === false) return false;
+            if (value === 0) return false;
+            if (value === '') return false;
+            if (Array.isArray(value) && value.length === 0) return false;
+            return true;
+        }
+        
+        stop() {
+            this.stopped = true;
+        }
+    }
+
+    /* ========================================================
+       6. SYNTAX HIGHLIGHTER
+       ======================================================== */
+    
+    class SyntaxHighlighter {
+        constructor() {
+            this.keywords = Object.keys(KEYWORDS);
+            this.builtins = BUILTINS;
+        }
+        
+        highlight(code) {
+            // Tokenize мустақилона барои подсветка
+            let result = '';
+            let i = 0;
+            const len = code.length;
+            
+            while (i < len) {
+                const ch = code[i];
+                
+                // Comment
+                if (ch === '#') {
+                    let comment = '';
+                    while (i < len && code[i] !== '\n') {
+                        comment += code[i++];
+                    }
+                    result += `<span class="tok-comment">${Utils.escapeHtml(comment)}</span>`;
+                    continue;
+                }
+                
+                // String
+                if (ch === '"' || ch === "'") {
+                    const quote = ch;
+                    let str = ch;
+                    i++;
+                    while (i < len && code[i] !== quote) {
+                        if (code[i] === '\\' && i + 1 < len) {
+                            str += code[i] + code[i+1];
+                            i += 2;
+                        } else if (code[i] === '\n') {
+                            break;
+                        } else {
+                            str += code[i++];
+                        }
+                    }
+                    if (i < len && code[i] === quote) {
+                        str += code[i++];
+                    }
+                    result += `<span class="tok-string">${Utils.escapeHtml(str)}</span>`;
+                    continue;
+                }
+                
+                // Number
+                if (/[0-9]/.test(ch)) {
+                    let num = '';
+                    while (i < len && /[0-9.]/.test(code[i])) {
+                        num += code[i++];
+                    }
+                    result += `<span class="tok-number">${num}</span>`;
+                    continue;
+                }
+                
+                // Identifier / keyword
+                if (/[a-zA-Zа-яА-ЯёЁӣӢӯӮғҒқҚҳҲҷҶ_]/.test(ch)) {
+                    let ident = '';
+                    while (i < len && /[a-zA-Zа-яА-ЯёЁӣӢӯӮғҒқҚҳҲҷҶ_0-9]/.test(code[i])) {
+                        ident += code[i++];
+                    }
+                    
+                    if (ident === 'рост' || ident === 'дурӯғ' || ident === 'холӣ') {
+                        result += `<span class="tok-boolean">${ident}</span>`;
+                    } else if (this.keywords.includes(ident)) {
+                        result += `<span class="tok-keyword">${ident}</span>`;
+                    } else if (this.builtins.includes(ident)) {
+                        result += `<span class="tok-builtin">${ident}</span>`;
+                    } else {
+                        // Check function call (next non-space is `(`)
+                        let j = i;
+                        while (j < len && code[j] === ' ') j++;
+                        if (code[j] === '(') {
+                            result += `<span class="tok-function">${ident}</span>`;
+                        } else {
+                            result += `<span class="tok-variable">${ident}</span>`;
+                        }
+                    }
+                    continue;
+                }
+                
+                // Operators
+                if (/[+\-*/%=<>!&|^~]/.test(ch)) {
+                    result += `<span class="tok-operator">${Utils.escapeHtml(ch)}</span>`;
+                    i++;
+                    continue;
+                }
+                
+                // Brackets
+                if (ch === '(' || ch === ')' || ch === '[' || ch === ']' || ch === '{' || ch === '}') {
+                    result += `<span class="tok-bracket-1">${ch}</span>`;
+                    i++;
+                    continue;
+                }
+                
+                // Default
+                result += Utils.escapeHtml(ch);
+                i++;
+            }
+            
+            return result;
+        }
+    }
+
+    /* ========================================================
+       7. EDITOR
+       ======================================================== */
+    
+    class Editor {
+        constructor(container) {
+            this.container = container;
+            this.input = document.getElementById('codeInput');
+            this.highlight = document.getElementById('codeHighlight');
+            this.lineNumbers = document.getElementById('lineNumbers');
+            this.wrapper = document.getElementById('editorWrapper');
+            this.highlighter = new SyntaxHighlighter();
+            this.onChange = null;
+            this.onCursorChange = null;
+            
+            this.bindEvents();
+        }
+        
+        bindEvents() {
+            // Input
+            this.input.addEventListener('input', () => {
+                this.update();
+                if (this.onChange) this.onChange(this.getValue());
+            });
+            
+            // Tab handling
+            this.input.addEventListener('keydown', (e) => this.handleKeyDown(e));
+            
+            // Scroll синхронизация
+            this.input.addEventListener('scroll', () => {
+                this.highlight.scrollTop = this.input.scrollTop;
+                this.highlight.scrollLeft = this.input.scrollLeft;
+            });
+            
+            this.wrapper.addEventListener('scroll', () => {
+                this.lineNumbers.scrollTop = this.wrapper.scrollTop;
+            });
+            
+            // Cursor position
+            this.input.addEventListener('click', () => this.updateCursor());
+            this.input.addEventListener('keyup', () => this.updateCursor());
+        }
+        
+        handleKeyDown(e) {
+            // Tab
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.input.selectionStart;
+                const end = this.input.selectionEnd;
+                const value = this.input.value;
+                
+                if (e.shiftKey) {
+                    // Shift+Tab - кам кардани отступ
+                    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                    if (value.substr(lineStart, 4) === '    ') {
+                        this.input.value = value.substring(0, lineStart) + value.substring(lineStart + 4);
+                        this.input.selectionStart = this.input.selectionEnd = Math.max(lineStart, start - 4);
+                        this.update();
+                    }
+                } else {
+                    // Tab
+                    this.input.value = value.substring(0, start) + '    ' + value.substring(end);
+                    this.input.selectionStart = this.input.selectionEnd = start + 4;
+                    this.update();
+                }
+                
+                if (this.onChange) this.onChange(this.getValue());
+                return;
+            }
+            
+            // Enter - автоотступ
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const start = this.input.selectionStart;
+                const value = this.input.value;
+                
+                // Гирифтани сатри ҷорӣ
+                const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                const currentLine = value.substring(lineStart, start);
+                
+                // Шумораи фосилаҳо дар оғози сатр
+                let indent = '';
+                for (const ch of currentLine) {
+                    if (ch === ' ' || ch === '\t') indent += ch;
+                    else break;
+                }
+                
+                // Агар сатр бо ':' тамом шуда бошад – илова кардани боз 4 фосила
+                const trimmed = currentLine.trim();
+                if (trimmed.endsWith(':')) {
+                    indent += '    ';
+                }
+                
+                const newText = '\n' + indent;
+                this.input.value = value.substring(0, start) + newText + value.substring(this.input.selectionEnd);
+                this.input.selectionStart = this.input.selectionEnd = start + newText.length;
+                
+                this.update();
+                if (this.onChange) this.onChange(this.getValue());
+                return;
+            }
+            
+            // Auto-close brackets
+            const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+            if (pairs[e.key]) {
+                const start = this.input.selectionStart;
+                const end = this.input.selectionEnd;
+                if (start === end) {
+                    e.preventDefault();
+                    const value = this.input.value;
+                    const inserted = e.key + pairs[e.key];
+                    this.input.value = value.substring(0, start) + inserted + value.substring(end);
+                    this.input.selectionStart = this.input.selectionEnd = start + 1;
+                    this.update();
+                    if (this.onChange) this.onChange(this.getValue());
+                }
+            }
+        }
+        
+        update() {
+            const code = this.input.value;
+            this.highlight.innerHTML = this.highlighter.highlight(code) + '\n';
+            this.updateLineNumbers();
+            this.updateCursor();
+        }
+        
+        updateLineNumbers() {
+            const lines = this.input.value.split('\n').length;
+            let html = '';
+            for (let i = 1; i <= lines; i++) {
+                html += `<div class="line-number">${i}</div>`;
+            }
+            this.lineNumbers.innerHTML = html;
+        }
+        
+        updateCursor() {
+            const pos = this.input.selectionStart;
+            const text = this.input.value.substring(0, pos);
+            const lines = text.split('\n');
+            const line = lines.length;
+            const col = lines[lines.length - 1].length + 1;
+            
+            if (this.onCursorChange) {
+                this.onCursorChange(line, col);
+            }
+        }
+        
+        getValue() {
+            return this.input.value;
+        }
+        
+        setValue(code) {
+            this.input.value = code || '';
+            this.update();
+        }
+        
+        focus() {
+            this.input.focus();
+        }
+        
+        insertAtCursor(text) {
+            const start = this.input.selectionStart;
+            const end = this.input.selectionEnd;
+            const value = this.input.value;
+            this.input.value = value.substring(0, start) + text + value.substring(end);
+            this.input.selectionStart = this.input.selectionEnd = start + text.length;
+            this.update();
+            if (this.onChange) this.onChange(this.getValue());
+        }
+    }
+
+    /* ========================================================
+       8. FILE MANAGER
+       ======================================================== */
+    
+    class FileManager {
+        constructor() {
+            this.files = []; // [{id, name, content, modified}]
+            this.activeId = null;
+            this.onChange = null;
+            this.load();
+        }
+        
+        load() {
+            const data = Utils.loadStorage(CONFIG.STORAGE_KEY);
+            if (data && data.files && data.files.length > 0) {
+                this.files = data.files;
+                this.activeId = data.activeId || this.files[0].id;
+            } else {
+                // Файли пешфарз
+                this.createFile(CONFIG.DEFAULT_FILE_NAME, CONFIG.DEFAULT_CODE, true);
+            }
+        }
+        
+        save() {
+            Utils.saveStorage(CONFIG.STORAGE_KEY, {
+                files: this.files,
+                activeId: this.activeId
+            });
+        }
+        
+        createFile(name, content = '', setActive = true) {
+            // Аз нав номгузорӣ ҳангоми такрор
+            let finalName = name;
+            let counter = 1;
+            while (this.files.some(f => f.name === finalName)) {
+                const parts = name.split('.');
+                if (parts.length > 1) {
+                    const ext = parts.pop();
+                    finalName = parts.join('.') + '_' + counter + '.' + ext;
+                } else {
+                    finalName = name + '_' + counter;
+                }
+                counter++;
+            }
+            
+            const file = {
+                id: Utils.uuid(),
+                name: finalName,
+                content: content,
+                modified: false,
+                createdAt: Date.now()
+            };
+            this.files.push(file);
+            if (setActive) this.activeId = file.id;
+            this.save();
+            if (this.onChange) this.onChange();
+            return file;
+        }
+        
+        deleteFile(id) {
+            const idx = this.files.findIndex(f => f.id === id);
+            if (idx === -1) return false;
+            
+            this.files.splice(idx, 1);
+            
+            if (this.activeId === id) {
+                this.activeId = this.files.length > 0 ? this.files[0].id : null;
+            }
+            
+            // Агар ягон файл намонад – навтаъсис кардан
+            if (this.files.length === 0) {
+                this.createFile(CONFIG.DEFAULT_FILE_NAME, CONFIG.DEFAULT_CODE);
+            }
+            
+            this.save();
+            if (this.onChange) this.onChange();
+            return true;
+        }
+        
+        renameFile(id, newName) {
+            const file = this.files.find(f => f.id === id);
+            if (!file) return false;
+            file.name = newName;
+            this.save();
+            if (this.onChange) this.onChange();
+            return true;
+        }
+        
+        setActive(id) {
+            this.activeId = id;
+            this.save();
+            if (this.onChange) this.onChange();
+        }
+        
+        getActive() {
+            return this.files.find(f => f.id === this.activeId);
+        }
+        
+        updateContent(id, content) {
+            const file = this.files.find(f => f.id === id);
+            if (!file) return;
+            file.content = content;
+            file.modified = true;
+            this.save();
+        }
+        
+        markSaved(id) {
+            const file = this.files.find(f => f.id === id);
+            if (file) {
+                file.modified = false;
+                this.save();
+                if (this.onChange) this.onChange();
+            }
+        }
+        
+        getAll() {
+            return this.files;
+        }
+    }
+
+    /* ========================================================
+       9. CONSOLE MANAGER
+       ======================================================== */
+    
+    class ConsoleManager {
+        constructor(element) {
+            this.element = element;
+        }
+        
+        log(message, type = 'output') {
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            
+            const prefix = document.createElement('span');
+            prefix.className = 'console-prefix';
+            const prefixMap = {
+                output: '›',
+                info: 'ℹ',
+                success: '✓',
+                warning: '⚠',
+                error: '✕',
+                system: '»'
+            };
+            prefix.textContent = prefixMap[type] || '›';
+            
+            const msg = document.createElement('span');
+            msg.className = 'console-message';
+            msg.textContent = message;
+            
+            line.appendChild(prefix);
+            line.appendChild(msg);
+            this.element.appendChild(line);
+            this.element.scrollTop = this.element.scrollHeight;
+        }
+        
+        error(message, line, col) {
+            const div = document.createElement('div');
+            div.className = 'console-line error';
+            
+            const content = document.createElement('div');
+            content.style.flex = '1';
+            
+            const title = document.createElement('div');
+            title.className = 'error-title';
+            title.innerHTML = '<span>✕</span> <span>Хатогии иҷро</span>';
+            content.appendChild(title);
+            
+            const msgEl = document.createElement('div');
+            msgEl.textContent = message;
+            content.appendChild(msgEl);
+            
+            if (line) {
+                const detail = document.createElement('div');
+                detail.className = 'error-detail';
+                detail.textContent = `Сатри ${line}${col ? ', сутуни ' + col : ''}`;
+                content.appendChild(detail);
+            }
+            
+            div.appendChild(content);
+            this.element.appendChild(div);
+            this.element.scrollTop = this.element.scrollHeight;
+        }
+        
+        clear() {
+            this.element.innerHTML = '';
+            this.log('Консол тоза карда шуд', 'system');
+        }
+    }
+
+    /* ========================================================
+      10. NOTIFICATION MANAGER
+       ======================================================== */
+    
+    class NotificationManager {
+        constructor(container) {
+            this.container = container;
+        }
+        
+        show(message, type = 'info', duration = 3000) {
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            
+            const icons = {
+                info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+                success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+                warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+                error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+            };
+            
+            notif.innerHTML = `
+                <div class="notification-icon" style="color: var(--accent-${type === 'success' ? 'green' : type === 'warning' ? 'yellow' : type === 'error' ? 'red' : 'blue'})">${icons[type] || icons.info}</div>
+                <div class="notification-message">${Utils.escapeHtml(message)}</div>
+            `;
+            
+            this.container.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.classList.add('removing');
+                setTimeout(() => notif.remove(), 300);
+            }, duration);
+        }
+    }
+
+    /* ========================================================
+       11. MODAL MANAGER
+       ======================================================== */
+    
+    class ModalManager {
+        constructor() {
+            this.overlay = document.getElementById('modalOverlay');
+            this.modal = document.getElementById('modal');
+            this.titleEl = document.getElementById('modalTitle');
+            this.bodyEl = document.getElementById('modalBody');
+            this.footerEl = document.getElementById('modalFooter');
+            this.closeBtn = document.getElementById('modalClose');
+            
+            this.closeBtn.addEventListener('click', () => this.close());
+            this.overlay.addEventListener('click', (e) => {
+                if (e.target === this.overlay) this.close();
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.isOpen()) this.close();
+            });
+        }
+        
+        open(options) {
+            this.titleEl.textContent = options.title || '';
+            this.bodyEl.innerHTML = options.body || '';
+            
+            this.footerEl.innerHTML = '';
+            if (options.buttons) {
+                options.buttons.forEach(btn => {
+                    const button = document.createElement('button');
+                    button.className = 'modal-btn ' + (btn.type || '');
+                    button.textContent = btn.text;
+                    button.addEventListener('click', () => {
+                        if (btn.onClick) btn.onClick();
+                    });
+                    this.footerEl.appendChild(button);
+                });
+            }
+            
+            this.overlay.classList.add('active');
+        }
+        
+        close() {
+            this.overlay.classList.remove('active');
+        }
+        
+        isOpen() {
+            return this.overlay.classList.contains('active');
+        }
+        
+        prompt(title, defaultValue = '', placeholder = '') {
+            return new Promise((resolve) => {
+                this.open({
+                    title: title,
+                    body: `
+                        <div class="input-group">
+                            <input type="text" class="text-input" id="promptInput" value="${Utils.escapeHtml(defaultValue)}" placeholder="${Utils.escapeHtml(placeholder)}">
+                        </div>
+                    `,
+                    buttons: [
+                        {
+                            text: 'Бекор',
+                            onClick: () => {
+                                this.close();
+                                resolve(null);
+                            }
+                        },
+                        {
+                            text: 'Тасдиқ',
+                            type: 'primary',
+                            onClick: () => {
+                                const val = document.getElementById('promptInput').value;
+                                this.close();
+                                resolve(val);
+                            }
+                        }
+                    ]
+                });
+                
+                setTimeout(() => {
+                    const input = document.getElementById('promptInput');
+                    if (input) {
+                        input.focus();
+                        input.select();
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                const val = input.value;
+                                this.close();
+                                resolve(val);
+                            }
+                        });
+                    }
+                }, 100);
+            });
+        }
+        
+        confirm(title, message) {
+            return new Promise((resolve) => {
+                this.open({
+                    title: title,
+                    body: `<div style="padding: 8px 0; color: var(--text-primary);">${Utils.escapeHtml(message)}</div>`,
+                    buttons: [
+                        {
+                            text: 'Бекор',
+                            onClick: () => {
+                                this.close();
+                                resolve(false);
+                            }
+                        },
+                        {
+                            text: 'Тасдиқ',
+                            type: 'danger',
+                            onClick: () => {
+                                this.close();
+                                resolve(true);
+                            }
+                        }
+                    ]
+                });
+            });
+        }
+    }
+
+    /* ========================================================
+       12. APPLICATION (Идоракунии асосӣ)
+       ======================================================== */
+    
+    class Application {
+        constructor() {
+            this.editor = null;
+            this.fileManager = null;
+            this.consoleManager = null;
+            this.interpreter = null;
+            this.notifications = null;
+            this.modal = null;
+            this.autosaveTimer = null;
+            this.running = false;
+        }
+        
+        async init() {
+            // Splash screen
+            this.startSplashScreen();
+            
+            // Эҷоди модулҳо
+            this.consoleManager = new ConsoleManager(document.getElementById('consoleContent'));
+            this.notifications = new NotificationManager(document.getElementById('notifications'));
+            this.modal = new ModalManager();
+            this.fileManager = new FileManager();
+            this.interpreter = new Interpreter(this.consoleManager);
+            
+            // Эҷоди муҳаррир
+            this.editor = new Editor(document.getElementById('editorContainer'));
+            this.editor.onChange = (code) => this.onCodeChange(code);
+            this.editor.onCursorChange = (line, col) => this.onCursorChange(line, col);
+            
+            // FileManager events
+            this.fileManager.onChange = () => this.renderUI();
+            
+            // Боркунии файли фаъол
+            this.loadActiveFile();
+            
+            // Рендеринг
+            this.renderUI();
+            
+            // Bind events
+            this.bindEvents();
+            
+            // Хатми splash
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('hidden');
+                this.editor.focus();
+            }, 2200);
+            
+            this.consoleManager.log(`${CONFIG.APP_NAME} v${CONFIG.VERSION} омода аст!`, 'success');
+        }
+        
+        startSplashScreen() {
+            // Зарраҳо
+            const particles = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 4 + 's';
+                p.style.animationDuration = (3 + Math.random() * 3) + 's';
+                const colors = ['#4ec9b0', '#007acc', '#c586c0', '#dcdcaa'];
+                p.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particles.appendChild(p);
+            }
+            
+            // Статуси боркунӣ
+            const statuses = [
+                'Боркунии модулҳо...',
+                'Интерпретатор тайёр шуд...',
+                'Муҳаррир танзим карда мешавад...',
+                'Интерфейс боркунӣ мешавад...',
+                'Тайёр!'
+            ];
+            let i = 0;
+            const statusEl = document.getElementById('splashStatus');
+            const interval = setInterval(() => {
+                if (i < statuses.length) {
+                    statusEl.textContent = statuses[i++];
+                } else {
+                    clearInterval(interval);
+                }
+            }, 400);
+        }
+        
+        bindEvents() {
+            // Тугмаи иҷро
+            document.getElementById('runBtn').addEventListener('click', () => this.runCode());
+            document.getElementById('clearConsoleBtn').addEventListener('click', () => this.consoleManager.clear());
+            
+            // Тугмаҳои файл
+            document.getElementById('newFileBtn').addEventListener('click', () => this.createNewFile());
+            document.getElementById('btnNewFile').addEventListener('click', () => this.createNewFile());
+            document.getElementById('btnSave').addEventListener('click', () => this.saveCurrentFile());
+            document.getElementById('btnOpen').addEventListener('click', () => this.openFile());
+            document.getElementById('refreshBtn').addEventListener('click', () => this.renderUI());
+            
+            // File input
+            document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileInput(e));
+            
+            // Menu items
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const wasActive = item.classList.contains('active');
+                    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+                    if (!wasActive) item.classList.add('active');
+                });
+            });
+            
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            });
+            
+            // Dropdown actions
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const action = item.dataset.action;
+                    this.handleAction(action);
+                });
+            });
+            
+            // Activity bar
+            document.querySelectorAll('.activity-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.activity-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const view = btn.dataset.view;
+                    if (view === 'help') this.showHelp();
+                    else if (view === 'run') this.runCode();
+                });
+            });
+            
+            // Console tabs
+            document.querySelectorAll('.console-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.console-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                });
+            });
+            
+            // Toggle console
+            document.getElementById('toggleConsoleBtn').addEventListener('click', () => {
+                document.getElementById('consoleArea').classList.toggle('collapsed');
+            });
+            
+            // Section toggle
+            document.getElementById('projectToggle').addEventListener('click', () => {
+                const arrow = document.querySelector('#projectToggle .section-arrow');
+                arrow.classList.toggle('expanded');
+                document.getElementById('fileExplorer').classList.toggle('hidden');
+            });
+            
+            // Console resize
+            this.initConsoleResize();
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => this.handleShortcut(e));
+            
+            // Window resize
+            window.addEventListener('resize', () => this.editor.update());
+            
+            // Beforeunload
+            window.addEventListener('beforeunload', () => {
+                this.fileManager.save();
+            });
+        }
+        
+        initConsoleResize() {
+            const resizer = document.getElementById('consoleResizer');
+            const consoleArea = document.getElementById('consoleArea');
+            let isResizing = false;
+            let startY = 0;
+            let startHeight = 0;
+            
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                startY = e.clientY;
+                startHeight = consoleArea.offsetHeight;
+                document.body.style.cursor = 'ns-resize';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const dy = startY - e.clientY;
+                const newHeight = Math.min(Math.max(startHeight + dy, 80), window.innerHeight * 0.7);
+                consoleArea.style.height = newHeight + 'px';
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = '';
+                }
+            });
+        }
+        
+        handleShortcut(e) {
+            const ctrl = e.ctrlKey || e.metaKey;
+            
+            // Ctrl+S - Save
+            if (ctrl && e.key === 's') {
+                e.preventDefault();
+                this.saveCurrentFile();
+                return;
+            }
+            
+            // Ctrl+Enter - Run
+            if (ctrl && e.key === 'Enter') {
+                e.preventDefault();
+                this.runCode();
+                return;
+            }
+            
+            // Ctrl+N - New file
+            if (ctrl && e.key === 'n') {
+                e.preventDefault();
+                this.createNewFile();
+                return;
+            }
+            
+            // Ctrl+O - Open
+            if (ctrl && e.key === 'o') {
+                e.preventDefault();
+                this.openFile();
+                return;
+            }
+            
+            // Ctrl+L - Clear console
+            if (ctrl && e.key === 'l') {
+                e.preventDefault();
+                this.consoleManager.clear();
+                return;
+            }
+            
+            // F1 - Help
+            if (e.key === 'F1') {
+                e.preventDefault();
+                this.showHelp();
+                return;
+            }
+            
+            // F5 - Run
+            if (e.key === 'F5') {
+                e.preventDefault();
+                this.runCode();
+                return;
+            }
+        }
+        
+        handleAction(action) {
+            switch(action) {
+                case 'new-file': this.createNewFile(); break;
+                case 'open-file': this.openFile(); break;
+                case 'save-file': this.saveCurrentFile(); break;
+                case 'save-as': this.saveAs(); break;
+                case 'download': this.downloadCurrent(); break;
+                case 'run': this.runCode(); break;
+                case 'clear-console': this.consoleManager.clear(); break;
+                case 'help': this.showHelp(); break;
+                case 'examples': this.showExamples(); break;
+                case 'about': this.showAbout(); break;
+                case 'select-all':
+                    this.editor.input.select();
+                    break;
+            }
+        }
+        
+        onCodeChange(code) {
+            const active = this.fileManager.getActive();
+            if (active) {
+                this.fileManager.updateContent(active.id, code);
+                this.updateTabModified();
+            }
+            
+            // Autosave
+            clearTimeout(this.autosaveTimer);
+            this.autosaveTimer = setTimeout(() => {
+                this.fileManager.save();
+            }, CONFIG.AUTOSAVE_DELAY);
+        }
+        
+        onCursorChange(line, col) {
+            document.getElementById('statusLine').textContent = `Сатр ${line}, Сутун ${col}`;
+        }
+        
+        loadActiveFile() {
+            const file = this.fileManager.getActive();
+            if (file) {
+                this.editor.setValue(file.content);
+            }
+        }
+        
+        updateTabModified() {
+            const active = this.fileManager.getActive();
+            if (!active) return;
+            const tab = document.querySelector(`.tab[data-id="${active.id}"]`);
+            if (tab) {
+                if (active.modified) {
+                    tab.classList.add('modified');
+                } else {
+                    tab.classList.remove('modified');
+                }
+            }
+        }
+        
+        renderUI() {
+            this.renderFileExplorer();
+            this.renderTabs();
+        }
+        
+        renderFileExplorer() {
+            const container = document.getElementById('fileExplorer');
+            container.innerHTML = '';
+            
+            this.fileManager.getAll().forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                if (file.id === this.fileManager.activeId) item.classList.add('active');
+                
+                item.innerHTML = `
+                    <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    <span class="file-name">${Utils.escapeHtml(file.name)}</span>
+                    <div class="file-delete" title="Нест кардан">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </div>
+                `;
+                
+                item.addEventListener('click', (e) => {
+                    if (e.target.closest('.file-delete')) {
+                        e.stopPropagation();
+                        this.deleteFile(file.id);
+                    } else {
+                        this.switchFile(file.id);
+                    }
+                });
+                
+                item.addEventListener('dblclick', (e) => {
+                    if (!e.target.closest('.file-delete')) {
+                        e.stopPropagation();
+                        this.renameFile(file.id);
+                    }
+                });
+                
+                container.appendChild(item);
+            });
+        }
+        
+        renderTabs() {
+            const container = document.getElementById('tabsBar');
+            container.innerHTML = '';
+            
+            this.fileManager.getAll().forEach(file => {
+                const tab = document.createElement('div');
+                tab.className = 'tab';
+                tab.dataset.id = file.id;
+                if (file.id === this.fileManager.activeId) tab.classList.add('active');
+                if (file.modified) tab.classList.add('modified');
+                
+                tab.innerHTML = `
+                    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    <span class="tab-name">${Utils.escapeHtml(file.name)}</span>
+                    <div class="tab-close" title="Пӯшидан"></div>
+                `;
+                
+                tab.addEventListener('click', (e) => {
+                    if (e.target.closest('.tab-close')) {
+                        e.stopPropagation();
+                        this.deleteFile(file.id);
+                    } else {
+                        this.switchFile(file.id);
+                    }
+                });
+                
+                container.appendChild(tab);
+            });
+        }
+        
+        switchFile(id) {
+            // Сабт кардани файли ҷорӣ
+            const current = this.fileManager.getActive();
+            if (current) {
+                this.fileManager.updateContent(current.id, this.editor.getValue());
+            }
+            
+            this.fileManager.setActive(id);
+            this.loadActiveFile();
+            this.editor.focus();
+        }
+        
+        async createNewFile() {
+            const name = await this.modal.prompt('Файли нав', 'нав.tjpy', 'Номи файлро ворид кунед');
+            if (!name) return;
+            
+            // Сабт кардани файли ҷорӣ
+            const current = this.fileManager.getActive();
+            if (current) {
+                this.fileManager.updateContent(current.id, this.editor.getValue());
+            }
+            
+            this.fileManager.createFile(name, '# Файли нав\n');
+            this.loadActiveFile();
+            this.editor.focus();
+            this.notifications.show(`Файли «${name}» эҷод шуд`, 'success');
+        }
+        
+        async deleteFile(id) {
+            const file = this.fileManager.getAll().find(f => f.id === id);
+            if (!file) return;
+            
+            const confirm = await this.modal.confirm(
+                'Нест кардан', 
+                `Оё мутмаин ҳастед, ки файли «${file.name}»-ро нест кардан мехоҳед?`
+            );
+            
+            if (confirm) {
+                this.fileManager.deleteFile(id);
+                this.loadActiveFile();
+                this.notifications.show('Файл нест карда шуд', 'success');
+            }
+        }
+        
+        async renameFile(id) {
+            const file = this.fileManager.getAll().find(f => f.id === id);
+            if (!file) return;
+            
+            const newName = await this.modal.prompt('Тағйири ном', file.name, 'Номи нав');
+            if (newName && newName !== file.name) {
+                this.fileManager.renameFile(id, newName);
+                this.notifications.show('Файл номгузорӣ шуд', 'success');
+            }
+        }
+        
+        saveCurrentFile() {
+            const active = this.fileManager.getActive();
+            if (!active) return;
+            
+            this.fileManager.updateContent(active.id, this.editor.getValue());
+            this.fileManager.markSaved(active.id);
+            this.notifications.show(`«${active.name}» сабт шуд`, 'success', 1500);
+        }
+        
+        async saveAs() {
+            const active = this.fileManager.getActive();
+            if (!active) return;
+            
+            const name = await this.modal.prompt('Сабт ҳамчун...', active.name, 'Номи нав');
+            if (!name) return;
+            
+            this.fileManager.createFile(name, this.editor.getValue());
+            this.loadActiveFile();
+            this.notifications.show(`Файли «${name}» сабт шуд`, 'success');
+        }
+        
+        downloadCurrent() {
+            const active = this.fileManager.getActive();
+            if (!active) return;
+            
+            Utils.downloadFile(this.editor.getValue(), active.name);
+            this.notifications.show('Файл боргирӣ шуд', 'success');
+        }
+        
+        openFile() {
+            document.getElementById('fileInput').click();
+        }
+        
+        handleFileInput(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const content = ev.target.result;
+                this.fileManager.createFile(file.name, content);
+                this.loadActiveFile();
+                this.notifications.show(`«${file.name}» кушода шуд`, 'success');
+            };
+            reader.onerror = () => {
+                this.notifications.show('Хато ҳангоми кушодани файл', 'error');
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+        
+        async runCode() {
+            if (this.running) {
+                this.interpreter.stop();
+                this.notifications.show('Иҷро қатъ карда шуд', 'warning');
+                return;
+            }
+            
+            this.running = true;
+            const runBtn = document.getElementById('runBtn');
+            const originalHTML = runBtn.innerHTML;
+            runBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg> Қатъ';
+            
+            const code = this.editor.getValue();
+            
+            this.consoleManager.log('▶ Иҷро оғоз шуд...', 'info');
+            const startTime = performance.now();
+            
+            try {
+                const result = await this.interpreter.run(code);
+                const elapsed = ((performance.now() - startTime) / 1000).toFixed(3);
+                
+                if (result.success) {
+                    this.consoleManager.log(`✓ Иҷро бо муваффақият ба охир расид (${elapsed}с)`, 'success');
+                    document.getElementById('errorCount').textContent = '0';
+                } else {
+                    this.consoleManager.error(result.error.message, result.error.line, result.error.col);
+                    document.getElementById('errorCount').textContent = '1';
+                }
+            } catch(e) {
+                this.consoleManager.error('Хатогии дохилӣ: ' + e.message);
+                console.error(e);
+            } finally {
+                this.running = false;
+                runBtn.innerHTML = originalHTML;
+            }
+        }
+        
+        showHelp() {
+            const helpContent = `
+                <div style="color: var(--text-primary); line-height: 1.6;">
+                    <h3 style="color: var(--accent-green); margin-bottom: 10px;">Калимаҳои калидӣ:</h3>
+                    <table style="width: 100%; font-family: var(--font-mono); font-size: 12px;">
+                        <tr><td style="padding: 4px; color: var(--syntax-keyword);">функсия</td><td style="color: var(--text-secondary);">Эҷоди функсия</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-keyword);">агар / вагарна / ё_агар</td><td style="color: var(--text-secondary);">Шартҳо</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-keyword);">барои ... дар ...</td><td style="color: var(--text-secondary);">Сикл</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-keyword);">то</td><td style="color: var(--text-secondary);">while-loop</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-keyword);">баргардон</td><td style="color: var(--text-secondary);">Бозгашт аз функсия</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-keyword);">рост / дурӯғ</td><td style="color: var(--text-secondary);">true / false</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-keyword);">ва / ё / на</td><td style="color: var(--text-secondary);">and / or / not</td></tr>
+                    </table>
+                    
+                    <h3 style="color: var(--accent-green); margin: 14px 0 10px;">Функсияҳои дохилӣ:</h3>
+                    <table style="width: 100%; font-family: var(--font-mono); font-size: 12px;">
+                        <tr><td style="padding: 4px; color: var(--syntax-builtin);">нишон(x)</td><td style="color: var(--text-secondary);">Чоп</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-builtin);">дарёфт(матн)</td><td style="color: var(--text-secondary);">Воридкунӣ</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-builtin);">дарозӣ(x)</td><td style="color: var(--text-secondary);">Дарозӣ</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-builtin);">диапазон(n)</td><td style="color: var(--text-secondary);">range</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-builtin);">намуд(x)</td><td style="color: var(--text-secondary);">Намуди тағйирёбанда</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-builtin);">адад(x), қатор(x)</td><td style="color: var(--text-secondary);">Табдил</td></tr>
+                    </table>
+                    
+                    <h3 style="color: var(--accent-green); margin: 14px 0 10px;">Тугмаҳои тез:</h3>
+                    <table style="width: 100%; font-size: 12px;">
+                        <tr><td style="padding: 4px; color: var(--syntax-function);">Ctrl+S</td><td style="color: var(--text-secondary);">Сабт</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-function);">Ctrl+Enter / F5</td><td style="color: var(--text-secondary);">Иҷро</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-function);">Ctrl+N</td><td style="color: var(--text-secondary);">Файли нав</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-function);">Ctrl+O</td><td style="color: var(--text-secondary);">Кушодан</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-function);">Ctrl+L</td><td style="color: var(--text-secondary);">Тоза кардани консол</td></tr>
+                        <tr><td style="padding: 4px; color: var(--syntax-function);">Tab</td><td style="color: var(--text-secondary);">Отступ (4 фосила)</td></tr>
+                    </table>
+                </div>
+            `;
+            
+            this.modal.open({
+                title: 'Дастур - SHT Python TJ',
+                body: helpContent,
+                buttons: [{ text: 'Пӯшидан', type: 'primary', onClick: () => this.modal.close() }]
+            });
+        }
+        
+        showExamples() {
+            const examples = [
+                { name: 'Салом дунё', code: 'нишон("Салом дунё!")' },
+                { name: 'Тағйирёбандаҳо', code: 'ном = "Алӣ"\nсин = 25\nнишон("Ном:", ном)\nнишон("Син:", син)' },
+                { name: 'Шартҳо', code: 'син = 18\nагар син >= 18:\n    нишон("Калонсол")\nвагарна:\n    нишон("Хурдсол")' },
+                { name: 'Сикл', code: 'барои i дар диапазон(5):\n    нишон("Рақам:", i)' },
+                { name: 'Функсия', code: 'функсия ҷамъ(а, б):\n    баргардон а + б\n\nнатиҷа = ҷамъ(10, 20)\nнишон("Натиҷа:", натиҷа)' },
+                { name: 'Рӯйхат', code: 'меваҳо = ["себ", "нок", "ангур"]\nбарои мева дар меваҳо:\n    нишон("Мева:", мева)\n\nнишон("Шумора:", дарозӣ(меваҳо))' },
+                { name: 'Факториал', code: 'функсия факториал(н):\n    агар н <= 1:\n        баргардон 1\n    баргардон н * факториал(н - 1)\n\nнишон("5! =", факториал(5))' },
+                { name: 'Фибоначи', code: 'функсия фиб(н):\n    агар н < 2:\n        баргардон н\n    баргардон фиб(н-1) + фиб(н-2)\n\nбарои i дар диапазон(10):\n    нишон(фиб(i))' }
+            ];
+            
+            let html = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+            examples.forEach((ex, i) => {
+                html += `
+                    <div class="example-card" data-idx="${i}" style="
+                        padding: 12px;
+                        background: var(--bg-primary);
+                        border: 1px solid var(--border-color);
+                        border-radius: 6px;
+                        cursor: pointer;
+                        transition: all 0.15s;
+                    " onmouseover="this.style.borderColor='var(--accent-blue)';this.style.boxShadow='var(--shadow-glow)'" 
+                       onmouseout="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">
+                        <div style="font-weight: 600; color: var(--accent-green); margin-bottom: 6px;">${ex.name}</div>
+                        <pre style="font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); margin: 0; white-space: pre-wrap;">${Utils.escapeHtml(ex.code)}</pre>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            this.modal.open({
+                title: 'Намунаҳои код',
+                body: html,
+                buttons: [{ text: 'Пӯшидан', onClick: () => this.modal.close() }]
+            });
+            
+            setTimeout(() => {
+                document.querySelectorAll('.example-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const idx = parseInt(card.dataset.idx);
+                        this.editor.setValue(examples[idx].code);
+                        const active = this.fileManager.getActive();
+                        if (active) this.fileManager.updateContent(active.id, examples[idx].code);
+                        this.modal.close();
+                        this.notifications.show('Намуна бор карда шуд', 'success');
+                    });
+                });
+            }, 100);
+        }
+        
+        showAbout() {
+            this.modal.open({
+                title: 'Дар бораи барнома',
+                body: `
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #4ec9b0, #007acc, #c586c0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">
+                            ${CONFIG.APP_NAME}
+                        </div>
+                        <div style="color: var(--text-secondary); margin-bottom: 20px;">Версия ${CONFIG.VERSION}</div>
+                        <div style="color: var(--text-primary); line-height: 1.7; text-align: left;">
+                            <p style="margin-bottom: 12px;">Муҳити рушди барномасозӣ ба забони тоҷикӣ.</p>
+                            <p style="margin-bottom: 12px;">Имкониятҳо:</p>
+                            <ul style="padding-left: 20px; color: var(--text-secondary);">
+                                <li>Забони барномасозӣ ба тоҷикӣ (псевдо-Python)</li>
+                                <li>Рангуборкунии синтаксис</li>
+                                <li>Идоракунии бисёр файлҳо</li>
+                                <li>Сабти автоматӣ</li>
+                                <li>Кор бидуни интернет</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                buttons: [{ text: 'Пӯшидан', type: 'primary', onClick: () => this.modal.close() }]
+            });
+        }
+    }
+
+    /* ========================================================
+       13. ОҒОЗ
+       ======================================================== */
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const app = new Application();
+        app.init();
+        window.shtApp = app; // барои дебаг
+    });
+
+})();
+</script>
+</body>
+</html>
